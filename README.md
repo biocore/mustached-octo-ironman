@@ -81,6 +81,8 @@ Job information can be accessed by using the job ID as the key in Redis. This in
         The result of the job. If the job has not completed, this is null. If the job errors out, this will contain a 
         repr'd version of the traceback
 
+The default status states defined by `moi` are `{"Queued", "Running", "Success", "Failed"}`.
+
 Websocket communication
 -----------------------
 
