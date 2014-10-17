@@ -92,5 +92,5 @@ Communication over the websocket uses JSON and the following protocols. From ser
         Add the job IDs described by each str to the moi-joblist
     remove : str or list of str
         Remove the job IDs describe by each str from the moi-joblist
-    update : object
+    update : job info object
         Job specific updates
