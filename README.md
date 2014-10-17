@@ -9,7 +9,7 @@ Examples
 To submit a job that is monitored client-side:
 
 ```python
-from moi import submit
+from moi.job import submit
 from tornado.web import RequestHandler
 
 def hello(**kwargs):
