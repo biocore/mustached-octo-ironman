@@ -6,17 +6,6 @@ Easy dispatched compute via in a Tornado environment using Redis and IPython. Up
 Examples
 --------
 
-To submit a basic job without monitoring it:
-
-```python
-from moi import unmonitored_submit, r_client
-
-def hello():
-    return "hi!"
-    
-job_id = unmonitored_submit(hello)
-```
-
 To submit a job that is monitored client-side:
 
 ```python
