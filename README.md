@@ -67,7 +67,7 @@ Job info
 
 Job information can be accessed by using the job ID as the key in Redis. This information is a JSON object that consists of:
 
-    job_id : str
+    id : str
         A str of a UUID4, the job's ID
     name : str
         The job's name
