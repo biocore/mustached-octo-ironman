@@ -61,9 +61,9 @@ Job pubsub communication
 
 A job can send the following actions over a `pubsub`:
     
-    update : {"status", null}
-        If "status", this indicates a change of the job's status. If null, then multiple aspects of the job have been updated.
-
+    update : null
+        The job has been updated.
+        
 Job info
 --------
 
