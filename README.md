@@ -3,7 +3,7 @@ mustached-octo-ironman
 
 Easy dispatched compute via in a Tornado environment using Redis and IPython. Updates are readily available to the client-side via a websocket and a customizable div.
 
-This codebase originates from [qiita](https://github.com/biocore/qiita) and is heavily influenced by their dev-team, in particular @squirrelo and @josenavas.
+This codebase originates from [qiita](https://github.com/biocore/qiita) and is heavily influenced by their dev-team, in particular [@squirrelo](https://github.com/squirrelo) and [@josenavas](https://github.com/josenavas).
 
 Examples
 --------
