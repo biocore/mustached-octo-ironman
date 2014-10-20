@@ -40,14 +40,12 @@ class Group(object):
     def __del__(self):
         self.close()
 
-    @coroutine
     def close(self):
         """Unsubscribe the group and all jobs being listened too"""
         for channel in self._listening_to:
-            yield Task(self.toredis.unsubscribe, channel)
-        yield Task(self.toredis.unsubscribe, self.group_pubsub)
-
-        self.toredis.disconnect()
+            self.toredis.unsubscribe(channel)
+        self.toredis.unsubscribe(self.group_pubsub)
+        # self.toredis.close()
 
     def _decode(self, data):
         try:

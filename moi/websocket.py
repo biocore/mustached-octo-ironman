@@ -20,6 +20,13 @@ class MOIMessageHandler(WebSocketHandler):
         else:
             return user.strip('" ')
 
+    def open(self):
+        clients.add(self)
+
+    def on_close(self):
+        clients.remove(self)
+        self.group.close()
+
     @authenticated
     def on_message(self, msg):
         """Accept a message that was published, process and forward
@@ -45,12 +52,6 @@ class MOIMessageHandler(WebSocketHandler):
         for verb, args in payload.items():
             self.group.action(verb, args)
 
-    def open(self):
-        clients.add(self)
-
-    def on_close(self):
-        clients.remove(self)
-        self.group.close()
-
     def forward(self, payload):
-        self.write_message(json_encode(payload))
+        if self in clients:
+            self.write_message(json_encode(payload))
