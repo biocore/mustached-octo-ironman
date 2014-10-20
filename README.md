@@ -19,7 +19,7 @@ def hello(**kwargs):
 submit_nouser(hello)
 ```
 
-To submit a job that is monitored client-side:
+To submit a job that is can be client-side (assumes the `moi` websocket handler is in place and that `moi.js` is loaded client-side):
 
 ```python
 from moi.job import submit
@@ -38,11 +38,11 @@ class Handler(RequestHandler):
 Structure
 ---------
 
-In `moi`, jobs are associated with a group (e.g., `self.current_user`). A group can have 0 to many jobs. A group has an associated `pubsub` channel that can be used to perform actions on the group.
+In `moi`, jobs are associated with a group (e.g., `self.current_user`). A group can have 0 to many jobs. A group has an associated `pubsub` channel at `<group>:pubsub` that can be used to perform actions on the group.
 
-All groups have a Redis `set` associated under `<group>:jobs` that contain the job IDs associated with the group. Each group also has a `pubsub` at `<group>:pubsub`. The `pubsub` is listened to by the `moi` web socket handler.   
+All groups have a Redis `set` associated under `<group>:jobs` that contain the job IDs associated with the group.   
 
-All jobs are keyed in Redis by their ID. In addition, each job has a `pubsub` at the key `<job ID>:pubsub` that can be used to notify subscribers of changes to the job. In `moi`, the web socket handler listens to all job pubsubs.
+All jobs are keyed in Redis by their ID. In addition, each job has a `pubsub` at the key `<job ID>:pubsub` that can be used to notify subscribers of changes to the job. 
 
 All communication over `pubsub` channels consists of JSON objects, where the keys are the actions to be performed and the values are communication and/or action dependent.
 
@@ -51,18 +51,20 @@ Group pubsub communication
 
 A group accepts the following actions via `pubsub`:
 
-    add : str or list of str
+    add : {list, set, tuple, generator} of str
         Add the job IDs described by each str to the group
-    remove : str or list of str
+    remove : {list, set, tuple, generator} of str
         Remove the job IDs describe by each str from the group
+    get : {list, set, tuple, generator} of str
+        Get the job details for the IDs
     
 Job pubsub communication
 ------------------------
 
 A job can send the following actions over a `pubsub`:
     
-    update : null
-        The job has been updated.
+    update : {list, set, tuple, generator} of str
+        Notifies subscribers that the corresponding job has been updated. A job can notify that other jobs have been updated.
         
 Job info
 --------
@@ -79,7 +81,7 @@ Job information can be accessed by using the job ID as the key in Redis. This in
         The group the job is associated with.
     status : str
         The job's status
-    Result : str or null
+    result : str or null
         The result of the job. If the job has not completed, this is null. If the job errors out, this will contain a 
         repr'd version of the traceback
 
@@ -90,9 +92,16 @@ Websocket communication
 
 Communication over the websocket uses JSON and the following protocols. From server to client:
 
-    add : str or list of str
-        Add the job IDs described by each str to the moi-joblist
-    remove : str or list of str
-        Remove the job IDs describe by each str from the moi-joblist
-    update : job info object
-        Job specific updates
+    add : list of object
+        Add the jobs described to the moi-joblist
+    remove : list of object
+        Remove the jobs described from the moi-joblist
+    update : list of object
+        Update the jobs described in the moi-joblist
+        
+From client to server:
+
+    get : list of str
+        The IDs that the client would like to get details for
+    remove : list of str 
+        The IDs that the client would no longer like tracked in the job group
