@@ -23,6 +23,7 @@ DIRNAME = dirname(__file__)
 STATIC_PATH = join(DIRNAME, ".")
 COOKIE_SECRET = b64encode(uuid4().bytes + uuid4().bytes)
 
+
 def say_hello(name, **kwargs):
     from time import sleep
     kwargs['update_status']("I'm about to say hello")
@@ -49,7 +50,7 @@ class SubmitHandler(RequestHandler):
 
         submit(group, name, handler, say_hello, argument)
         self.redirect('/')
-        #self.render("moi_example.html", user=self.get_current_user())
+
 
 class ResultHandler(RequestHandler):
     def get(self, id):
@@ -60,7 +61,7 @@ class ResultHandler(RequestHandler):
 class MOIApplication(Application):
     def __init__(self):
         handlers = [
-            (r"/consumer/", MOIMessageHandler),
+            (r"/moi-ws/", MOIMessageHandler),
             (r"/static/(.*)", StaticFileHandler,
              {"path": STATIC_PATH}),
             (r"/result/(.*)", ResultHandler),

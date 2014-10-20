@@ -1,4 +1,4 @@
-var host = 'ws://' + window.location.host + '/consumer/';
+var host = 'ws://' + window.location.host + '/moi-ws/';
 var jobids = {};
 var moi_joblist = null;
 var websocket = null;
