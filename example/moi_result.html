@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+    <head>
+        <title>MOI Result</title>
+        <script src="/static/moi.js"></script>
+    </head>
+    <body onload="initialize_moi()">
+{% if job_info %}
+            <table border=1>
+                <th>Key</th><th>Value</th>
+    {% for key in sorted(job_info) %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ job_info[key] }}</td>
+                </tr>
+    {% end %}
+            </table>
+{% else %}
+    <p>Can't find the results!</p>
+{% end %}
+    <a href="/">Go home</a>
+    </body>
+</html>
