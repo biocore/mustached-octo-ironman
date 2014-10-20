@@ -31,13 +31,13 @@ def _status_change(id, redis, new_status):
 
     with redis.pipeline() as pipe:
         pipe.set(id, json.dumps(job_info), ex=REDIS_KEY_TIMEOUT)
-        pipe.publish(job_info['pubsub'], json.dumps({"update": "status"}))
+        pipe.publish(job_info['pubsub'], json.dumps({"update": [id]}))
         pipe.execute()
 
     return old_status
 
 
-def _redis_wrap(redis_deets, func, *args, **kwargs):
+def _redis_wrap(job_info, func, *args, **kwargs):
     """Wrap something to compute
 
     The function that will have available, via kwargs['update_status'], a
@@ -48,17 +48,13 @@ def _redis_wrap(redis_deets, func, *args, **kwargs):
 
     Parameters
     ----------
-    redis_deets : dict
-        Redis details, specifically:
-            {'id': <str, the job ID>,
-             'pubsub': <str, the pubsub key for the job>,
-             'group': <str, the group the job is a part of>,
-             'handler': <URL or None, the results handler>}
+    job_info : dict
+       Redis job details
     func : function
         A function to execute. This function must accept ``**kwargs``, and will
         have ``update_status`` available as a key.
     """
-    def _deposit_payload(job_info):
+    def _deposit_payload(to_deposit):
         """Store job info, and publish an update
 
         Parameters
@@ -67,25 +63,18 @@ def _redis_wrap(redis_deets, func, *args, **kwargs):
             The job info
 
         """
-        pubsub = job_info['pubsub']
-        id = job_info['id']
-        job_data_serialized = json.dumps(job_info)
-
+        pubsub = to_deposit['pubsub']
+        id = to_deposit['id']
+        job_data_serialized = json.dumps(to_deposit)
         with r_client.pipeline() as pipe:
             pipe.set(id, job_data_serialized, ex=REDIS_KEY_TIMEOUT)
-            pipe.publish(pubsub, json.dumps({"update": None}))
+            pipe.publish(pubsub, json.dumps({"update": [id]}))
             pipe.execute()
-
-    job_info = {'id': redis_deets['id'],
-                'pubsub': redis_deets['pubsub'],
-                'handler': redis_deets['handler'],
-                'group': redis_deets['group'],
-                'status': 'Running',
-                'result': None}
 
     status_changer = partial(_status_change, job_info['id'], r_client)
     kwargs['update_status'] = status_changer
 
+    job_info['status'] = 'Running'
     _deposit_payload(job_info)
     try:
         job_info['result'] = func(*args, **kwargs)
@@ -127,21 +116,23 @@ def submit(group, name, handler, func, *args, **kwargs):
 
     group_jobs_key = group + ':jobs'
     group_pubsub_key = group + ':pubsub'
-
     job_pubsub_key = id + ':pubsub'
 
+    job_info = {'id': id,
+                'pubsub': job_pubsub_key,
+                'handler': handler,
+                'group': group,
+                'name': name,
+                'status': 'Queued',
+                'result': None}
+
     with r_client.pipeline() as pipe:
-        # add the job to the group
+        pipe.set(id, json.dumps(job_info))
         pipe.sadd(group_jobs_key, id)
-        pipe.publish(group_pubsub_key, {'add': id})
+        pipe.publish(group_pubsub_key, json.dumps({'add': [id]}))
         pipe.execute()
 
-    redis_deets = {'pubsub': job_pubsub_key,
-                   'id': id,
-                   'group': group,
-                   'handler': handler}
-
-    ctx.submit_async(_redis_wrap, redis_deets, func, *args, **kwargs)
+    ctx.submit_async(_redis_wrap, job_info, func, *args, **kwargs)
     return id
 
 
