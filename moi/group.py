@@ -55,6 +55,11 @@ class Group(object):
         except (ValueError, TypeError):
             raise ValueError("Unable to decode data!")
 
+    @property
+    def jobs(self):
+        """Get the known job IDs"""
+        return self._listening_to.values()
+
     def listen_for_updates(self):
         """Attach a callback on the group pubsub"""
         self.toredis.subscribe(self.group_pubsub, callback=self.callback)
@@ -127,8 +132,8 @@ class Group(object):
         else:
             raise ValueError("Callback triggered unexpectedly by %s" % channel)
 
-        to_forward = (action_f(verb, args) for verb, args in payload.items())
-        self.forwarder(to_forward)
+        for verb, args in payload.items():
+            action_f(verb, args)
 
     def action(self, verb, args):
         """Process the described action
@@ -164,7 +169,7 @@ class Group(object):
         else:
             raise ValueError("Unknown action: %s" % verb)
 
-        return response
+        self.forwarder(response)
 
     def job_action(self, verb, args):
         """Process the described action
@@ -194,7 +199,7 @@ class Group(object):
         else:
             raise ValueError("Unknown job action: %s" % verb)
 
-        return response
+        self.forwarder(response)
 
     def _action_add(self, ids):
         """Add IDs to the group
@@ -234,11 +239,17 @@ class Group(object):
         ids : {list, set, tuple, generator} of str
             The IDs to get
 
+        Notes
+        -----
+        If ids is empty, then all IDs are returned.
+
         Returns
         -------
         list of dict
             The details of the jobs
         """
+        if not ids:
+            ids = self.jobs
         result = []
         for id_ in ids:
             if id_ is None:

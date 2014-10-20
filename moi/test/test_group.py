@@ -56,15 +56,15 @@ class GroupTests(TestCase):
             def __init__(self):
                 self.result = None
             def __call__(self, data):
-                self.result = list(data)
+                self.result = data
 
         fwd = forwarder()
         self.obj.forwarder = fwd
 
         self.obj.callback(('message', 'testing:pubsub', dumps({'get': ['b']})))
-        self.assertEqual(fwd.result, [{'get': ["job b"]}])
+        self.assertEqual(fwd.result, {'get': ["job b"]})
         self.obj.callback(('message', 'a:pubsub', dumps({'update': ['a']})))
-        self.assertEqual(fwd.result, [{'update': ["job a"]}])
+        self.assertEqual(fwd.result, {'update': ["job a"]})
 
         with self.assertRaises(ValueError):
             self.obj.callback(('message', 'testing:pubsub',
@@ -73,12 +73,21 @@ class GroupTests(TestCase):
         self.assertEqual(self.obj.callback(('a', 'b', 'c')), None)
 
     def test_action(self):
-        resp = self.obj.action('add', ['d', 'e'])
-        self.assertEqual(resp, {'add': ["other job", "other job e"]})
-        resp = self.obj.action('remove', ['e', 'd'])
-        self.assertEqual(resp, {'remove': ["other job e", "other job"]})
-        resp = self.obj.action('remove', ['d'])
-        self.assertEqual(resp, {'remove': []})
+        class forwarder(object):
+            def __init__(self):
+                self.result = None
+            def __call__(self, data):
+                self.result = data
+
+        fwd = forwarder()
+        self.obj.forwarder = fwd
+
+        self.obj.action('add', ['d', 'e'])
+        self.assertEqual(fwd.result, {'add': ["other job", "other job e"]})
+        self.obj.action('remove', ['e', 'd'])
+        self.assertEqual(fwd.result, {'remove': ["other job e", "other job"]})
+        self.obj.action('remove', ['d'])
+        self.assertEqual(fwd.result, {'remove': []})
 
         with self.assertRaises(TypeError):
             self.obj.action('add', 'foo')
@@ -87,8 +96,17 @@ class GroupTests(TestCase):
             self.obj.action('foo', ['d'])
 
     def test_job_action(self):
-        resp = self.obj.job_action('update', ['a', 'b'])
-        self.assertEqual(resp, {'update': ["job a", "job b"]})
+        class forwarder(object):
+            def __init__(self):
+                self.result = None
+            def __call__(self, data):
+                self.result = data
+
+        fwd = forwarder()
+        self.obj.forwarder = fwd
+
+        self.obj.job_action('update', ['a', 'b'])
+        self.assertEqual(fwd.result, {'update': ["job a", "job b"]})
 
         with self.assertRaises(TypeError):
             self.obj.job_action('add', 'foo')
