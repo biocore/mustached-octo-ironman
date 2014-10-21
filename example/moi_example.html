@@ -5,7 +5,7 @@
         <script src="/static/moi.js"></script>
     </head>
     <body onload="initialize_moi()">
-        <p>The MOI example allows you to submit a job with a name. This job is dispatched for compute on an IPython cluster. The job itself will update its own status, sleep for 5 seconds, and then complete.</p>
+        <p>The MOI example allows you to submit a job with a name. This job is dispatched for compute on an IPython cluster. The job itself will update its own status, sleep for 5 seconds, and then complete. Feel free to add or remove multiple jobs. This example does not distinguish users, resulting in jobs that appear or disappear on refresh if multiple users are on.</p>
         <form role="form" action="/" method="post">
             <div>
                 <input type="text" name="jobname" value="Enter a job name!">
