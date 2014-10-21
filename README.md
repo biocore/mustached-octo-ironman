@@ -35,6 +35,11 @@ class Handler(RequestHandler):
         submit(self.current_user, "The hello job", result_handler, hello)
 ```
 
+Types of compute
+----------------
+
+Any function that can be sent over to an IPython client is acceptable. Going one step further, the code also supports system calls such that any string that is passed will be used in a subprocess call on the executing engine.
+
 Structure
 ---------
 
