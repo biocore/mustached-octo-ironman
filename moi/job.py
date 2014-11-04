@@ -2,7 +2,7 @@ import json
 from uuid import uuid4
 from functools import partial
 
-from moi import r_client, ctx, REDIS_KEY_TIMEOUT
+from moi import r_client, ctxs, ctx_default, REDIS_KEY_TIMEOUT
 
 
 def _status_change(id, redis, new_status):
@@ -88,7 +88,13 @@ def _redis_wrap(job_info, func, *args, **kwargs):
         _deposit_payload(job_info)
 
 
-def submit(group, name, handler, func, *args, **kwargs):
+def submit(ctx_name, *args, **kwargs):
+    """Submit through a context"""
+    ctx = ctxs.get(ctx_name, ctx_default)
+    return _submit(ctx, *args, **kwargs)
+
+
+def _submit(ctx, group, name, handler, func, *args, **kwargs):
     """Submit a function to a cluster
 
     Parameters
@@ -154,4 +160,5 @@ def submit_nouser(func, *args, **kwargs):
     str
         The job ID
     """
-    return submit("no-user", "unnamed", None, func, *args, **kwargs)
+    return submit(ctx_default, "no-user", "unnamed", None, func, *args,
+                  **kwargs)
