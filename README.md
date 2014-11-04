@@ -22,6 +22,7 @@ submit_nouser(hello)
 To submit a job that is can be client-side (assumes the `moi` websocket handler is in place and that `moi.js` is loaded client-side):
 
 ```python
+from moi import ctx_default
 from moi.job import submit
 from tornado.web import RequestHandler
 
@@ -32,7 +33,8 @@ def hello(**kwargs):
 class Handler(RequestHandler):
     def get(self):
         result_handler = "/hello_result"
-        submit(self.current_user, "The hello job", result_handler, hello)
+        submit(ctx_default, self.current_user, "The hello job", result_handler,
+               hello)
 ```
 
 Types of compute
