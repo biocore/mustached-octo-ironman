@@ -11,7 +11,7 @@ from tornado.options import define, options, parse_command_line
 from tornado.web import RequestHandler, StaticFileHandler
 from tornado.escape import json_encode
 
-from moi import r_client
+from moi import r_client, ctx_default
 from moi.websocket import MOIMessageHandler
 from moi.job import submit
 
@@ -48,7 +48,7 @@ class SubmitHandler(RequestHandler):
         group = "no-user"
         argument = name
 
-        submit(group, name, handler, say_hello, argument)
+        submit(ctx_default, group, name, handler, say_hello, argument)
         self.redirect('/')
 
 
