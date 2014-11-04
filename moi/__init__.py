@@ -1,11 +1,34 @@
+import os
+
 from redis import Redis
+
+from future import standard_library
+with standard_library.hooks():
+    from configparser import ConfigParser
+
 from moi.context import Context
 
 
 REDIS_KEY_TIMEOUT = 84600 * 14  # two weeks
 
-r_client = Redis()
-ctx = Context('qiita_demo')
+
+# parse the config bits
+_config = ConfigParser()
+with open(os.environ['MOI_CONFIG_FP']) as conf:
+    _config.readfp(conf)
 
 
-__all__ = ['r_client', 'ctx', 'REDIS_KEY_TIMEOUT']
+# establish a connection to the redis server
+r_client = Redis(host=_config.get('redis', 'host'),
+                 port=_config.getint('redis', 'port'),
+                 password=_config.get('redis', 'password'),
+                 db=_config.get('redis', 'db'))
+
+
+# setup contexts
+ctxs = {name: Context(name)
+        for name in _config.get('ipython', 'context').split(',')}
+ctx_default = _config.get('ipython', 'default')
+
+
+__all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT']
