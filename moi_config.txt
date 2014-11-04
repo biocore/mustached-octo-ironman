@@ -1,0 +1,9 @@
+[redis]
+host = localhost
+port = 6379
+password =
+db = 0
+
+[ipython]
+context=qiita_general,qiita_reserved
+default=qiita_general
