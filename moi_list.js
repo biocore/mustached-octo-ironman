@@ -75,9 +75,7 @@ var moi_list = new function () {
     };
 
     function removeInfo(id) {
-        if(!tracked_node(info))
-            return;
-
+        // can't get here without the user clicking so tracking isn't relevant
         if(id in info_ids) {
             para_node = info_ids[id]; 
             info_list.removeChild(para_node);
