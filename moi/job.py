@@ -1,8 +1,9 @@
 import json
-from uuid import uuid4
 from functools import partial
+from datetime import datetime
 
 from moi import r_client, ctxs, ctx_default, REDIS_KEY_TIMEOUT
+from moi.group import create_info
 
 
 def _status_change(id, redis, new_status):
@@ -75,6 +76,8 @@ def _redis_wrap(job_info, func, *args, **kwargs):
     kwargs['update_status'] = status_changer
 
     job_info['status'] = 'Running'
+    job_info['date_start'] = str(datetime.now())
+
     _deposit_payload(job_info)
     try:
         job_info['result'] = func(*args, **kwargs)
@@ -82,9 +85,10 @@ def _redis_wrap(job_info, func, *args, **kwargs):
     except Exception:
         import sys
         import traceback
-        job_info['result'] = repr(traceback.format_exception(*sys.exc_info()))
+        job_info['result'] = traceback.format_exception(*sys.exc_info())
         job_info['status'] = 'Failed'
     finally:
+        job_info['date_end'] = str(datetime.now())
         _deposit_payload(job_info)
 
 
@@ -94,16 +98,16 @@ def submit(ctx_name, *args, **kwargs):
     return _submit(ctx, *args, **kwargs)
 
 
-def _submit(ctx, group, name, handler, func, *args, **kwargs):
+def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
     """Submit a function to a cluster
 
     Parameters
     ----------
-    group : str
-        A group that the job is a part of
+    parent_id : str
+        The ID of the group that the job is a part of.
     name : str
         The name of the job
-    handler : url
+    url : str
         The handler that can take the results (e.g., /beta_diversity/)
     func : function
         The function to execute. Any returns from this function will be
@@ -115,31 +119,28 @@ def _submit(ctx, group, name, handler, func, *args, **kwargs):
 
     Returns
     -------
-    str
-        The job ID
+    tuple, (str, str)
+        The job ID and the parent ID
     """
-    id = str(uuid4())
+    parent_info = r_client.get(parent_id)
+    if parent_info is None:
+        parent_info = create_info('unnamed', 'group', id=parent_id)
+        parent_id = parent_info['id']
+        r_client.set(parent_id, json.dumps(parent_info))
 
-    group_jobs_key = group + ':jobs'
-    group_pubsub_key = group + ':pubsub'
-    job_pubsub_key = id + ':pubsub'
+    parent_pubsub_key = parent_id + ':pubsub'
 
-    job_info = {'id': id,
-                'pubsub': job_pubsub_key,
-                'handler': handler,
-                'group': group,
-                'name': name,
-                'status': 'Queued',
-                'result': None}
+    job_info = create_info(name, 'job', url=url, parent=parent_id, store=True)
+    job_info['status'] = 'Queued'
+    job_id = job_info['id']
 
     with r_client.pipeline() as pipe:
-        pipe.set(id, json.dumps(job_info))
-        pipe.sadd(group_jobs_key, id)
-        pipe.publish(group_pubsub_key, json.dumps({'add': [id]}))
+        pipe.set(job_id, json.dumps(job_info))
+        pipe.publish(parent_pubsub_key, json.dumps({'add': [job_id]}))
         pipe.execute()
 
     ctx.submit_async(_redis_wrap, job_info, func, *args, **kwargs)
-    return id
+    return job_id, parent_id
 
 
 def submit_nouser(func, *args, **kwargs):

@@ -1,11 +1,15 @@
 """Redis group communication"""
 
+from uuid import uuid4
+
 import toredis
 from redis import ResponseError
-from tornado.gen import coroutine, Task
-from tornado.escape import json_decode
+from tornado.escape import json_decode, json_encode
 
 from moi import r_client
+
+_children_key = lambda x: x + ':children'
+_pubsub_key = lambda x: x + ':pubsub'
 
 
 class Group(object):
@@ -25,8 +29,9 @@ class Group(object):
 
         self._listening_to = {}
 
-        self.group_jobs = group + ':jobs'
-        self.group_pubsub = group + ':pubsub'
+        self.group = group
+        self.group_children = _children_key(group)
+        self.group_pubsub = _pubsub_key(group)
 
         if forwarder is None:
             self.forwarder = lambda x: None
@@ -34,8 +39,23 @@ class Group(object):
             self.forwarder = forwarder
 
         self.listen_for_updates()
-        for job_id in r_client.smembers(self.group_jobs):
-            self.listen_to_job(job_id)
+        for node in self._traverse(self.group):
+            self.listen_to_node(node['id'])
+
+    def _traverse(self, id_):
+        """Traverse groups and yield info dicts for jobs"""
+
+        nodes = r_client.smembers(_children_key(id_))
+        while nodes:
+            current_id = nodes.pop()
+
+            details = self._decode(r_client.get(current_id))
+            if details['type'] == 'group':
+                children = r_client.smembers(_children_key(details['id']))
+                if children is not None:
+                    nodes.update(children)
+
+            yield details
 
     def __del__(self):
         self.close()
@@ -45,7 +65,6 @@ class Group(object):
         for channel in self._listening_to:
             self.toredis.unsubscribe(channel)
         self.toredis.unsubscribe(self.group_pubsub)
-        # self.toredis.close()
 
     def _decode(self, data):
         try:
@@ -62,16 +81,16 @@ class Group(object):
         """Attach a callback on the group pubsub"""
         self.toredis.subscribe(self.group_pubsub, callback=self.callback)
 
-    def listen_to_job(self, id_):
+    def listen_to_node(self, id_):
         """Attach a callback on the job pubsub if it exists"""
         if r_client.get(id_) is None:
             return
         else:
-            self.toredis.subscribe(id_ + ':pubsub', callback=self.callback)
-            self._listening_to[id_ + ':pubsub'] = id_
+            self.toredis.subscribe(_pubsub_key(id_), callback=self.callback)
+            self._listening_to[_pubsub_key(id_)] = id_
             return id_
 
-    def unlisten_to_job(self, id_):
+    def unlisten_to_node(self, id_):
         """Stop listening to a job
 
         Parameters
@@ -84,12 +103,12 @@ class Group(object):
         str or None
             The ID removed or None if the ID was not removed
         """
-        id_pubsub = id_ + ':pubsub'
+        id_pubsub = _pubsub_key(id_)
 
         if id_pubsub in self._listening_to:
             del self._listening_to[id_pubsub]
             self.toredis.unsubscribe(id_pubsub)
-            r_client.srem(self.group_jobs, id_)
+            r_client.srem(self.group_children, id_)
             return id_
         else:
             return None
@@ -159,11 +178,11 @@ class Group(object):
             raise TypeError("args is unknown type: %s" % type(args))
 
         if verb == 'add':
-            response = {'add': self._action_add(args)}
+            response = ({'add': i} for i in self._action_add(args))
         elif verb == 'remove':
-            response = {'remove': self._action_remove(args)}
+            response = ({'remove': i} for i in self._action_remove(args))
         elif verb == 'get':
-            response = {'get': self._action_get(args)}
+            response = ({'get': i} for i in self._action_get(args))
         else:
             raise ValueError("Unknown action: %s" % verb)
 
@@ -193,7 +212,7 @@ class Group(object):
             raise TypeError("args is unknown type: %s" % type(args))
 
         if verb == 'update':
-            response = {'update': self._action_get(args)}
+            response = ({'update': i} for i in self._action_get(args))
         else:
             raise ValueError("Unknown job action: %s" % verb)
 
@@ -212,7 +231,7 @@ class Group(object):
         list of dict
             The details of the added jobs
         """
-        return self._action_get((self.listen_to_job(id_) for id_ in ids))
+        return self._action_get((self.listen_to_node(id_) for id_ in ids))
 
     def _action_remove(self, ids):
         """Remove IDs from the group
@@ -227,7 +246,7 @@ class Group(object):
         list of dict
             The details of the removed jobs
         """
-        return self._action_get((self.unlisten_to_job(id_) for id_ in ids))
+        return self._action_get((self.unlisten_to_node(id_) for id_ in ids))
 
     def _action_get(self, ids):
         """Get the details for ids
@@ -267,3 +286,43 @@ class Group(object):
             else:
                 result.append(payload)
         return result
+
+
+def create_info(name, info_type, url=None, parent=None, id=None, store=False):
+    """Return a group object"""
+    id = str(uuid4()) if id is None else id
+    pubsub = _pubsub_key(id)
+
+    info = {'id': id,
+            'type': info_type,
+            'pubsub': pubsub,
+            'url': url,
+            'parent': parent,
+            'name': name,
+            'status': 'Queued' if info_type == 'job' else None,
+            'date_start': None,
+            'date_end': None,
+            'result': None}
+
+    if store:
+        r_client.set(id, json_encode(info))
+
+        if parent is not None:
+            r_client.sadd(_children_key(parent), id)
+
+    return info
+
+
+def get_user_from_id(id):
+    """Gets a user from an ID"""
+    return r_client.hget('user-id-map', id)
+
+
+def get_id_from_user(user):
+    """Get an ID from a user, creates if necessary"""
+    id = r_client.hget('user-id-map', user)
+    if id is None:
+        id = str(uuid4())
+        r_client.hset('user-id-map', user, id)
+        r_client.hset('user-id-map', id, user)
+    return id

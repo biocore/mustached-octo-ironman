@@ -72,26 +72,39 @@ A job can send the following actions over a `pubsub`:
     
     update : {list, set, tuple, generator} of str
         Notifies subscribers that the corresponding job has been updated. A job can notify that other jobs have been updated.
-        
-Job info
---------
 
-Job information can be accessed by using the job ID as the key in Redis. This information is a JSON object that consists of:
+Job organization
+----------------
+
+Jobs are described in a hierarchy to allow jobs to be associated with multiple logically related groups. For instance, a job might be associated with a user, and additionally, associated with a workflow that the user is executing (e.g., some complex analysis). The hierarchy can be thought of as a tree, where internal nodes are "groups" and the tips are actual jobs. Paths in the tree are denoted by a ":" delimited string. For instance `foo` is the group "foo", while `foo:ID_1:ID_2` denotes the group "foo", which contains "ID_1", which contains "ID_2". Groups are described by uuid's, as are jobs. 
+        
+Info object
+-----------
+
+Job and group information can be accessed by using the ID as the key in Redis. This information is a JSON object that consists of:
 
     id : str
-        A str of a UUID4, the job's ID
+        A str of a UUID4, the ID
     name : str
-        The job's name
-    handler : str or null
-        If not null, this is expected to be a URL that can interpret the result of the job (e.g., /foo)
-    group : str
-        The group the job is associated with.
+        The group or job name
+    type : str, {'job', 'group'}
+        What type of info object this is.
+    pubsub : str
+        The pubsub for this info object
+    url : str or null
+        The URL for group or job results. This URL is provided the corresponding ID (e.g., /foo/<uuid>).
+    parent : str or null
+        The ID of the parent. Null if the group is the root. It is not required that this be a uuid.
     status : str
-        The job's status
+        The group or job status
     result : str or null
         The result of the job. If the job has not completed, this is null. If the job errors out, this will contain a 
-        repr'd version of the traceback
-
+        repr'd version of the traceback. This is null if the object described a group.
+    date_start : str of time
+        Time when the job started, expected format is %Y-%m-%d %H:%M:%s. This is null if the object describes a group.
+    date_end : str of time
+        Time when the job ended, expected format is %Y-%m-%d %H:%M:%s. This is null if the object described a group.
+    
 The default status states defined by `moi` are `{"Queued", "Running", "Success", "Failed"}`.
 
 Websocket communication
@@ -99,16 +112,14 @@ Websocket communication
 
 Communication over the websocket uses JSON and the following protocols. From server to client:
 
-    add : list of object
-        Add the jobs described to the moi-joblist
-    remove : list of object
-        Remove the jobs described from the moi-joblist
-    update : list of object
-        Update the jobs described in the moi-joblist
+    add : info object
+        An info object to that has been added on the server.
+    remove : info object
+        An info object that has been removed on the server.
+    update : info object
+        An info object that has been upadted on the server.
         
 From client to server:
 
-    get : list of str
-        The IDs that the client would like to get details for
-    remove : list of str 
-        The IDs that the client would no longer like tracked in the job group
+    remove : str
+        An ID that the client would like to remove. If a group ID, then all descending jobs are removed as well.

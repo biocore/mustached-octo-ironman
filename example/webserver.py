@@ -14,9 +14,10 @@ from tornado.escape import json_encode
 from moi import r_client, ctx_default
 from moi.websocket import MOIMessageHandler
 from moi.job import submit
+from moi.group import get_id_from_user, create_info
 
 
-define("port", default=8888, help="run on the given port", type=int)
+define("port", default=8886, help="run on the given port", type=int)
 
 
 DIRNAME = dirname(__file__)
@@ -40,22 +41,41 @@ class SubmitHandler(RequestHandler):
 
     def get(self):
         self.set_current_user("no-user")
-        self.render("moi_example.html", user=self.get_current_user())
+        group_id = get_id_from_user("no-user")
+        self.render("moi_example.html", user=self.get_current_user(),
+                    group_id=group_id)
 
     def post(self):
-        name = self.get_argument("jobname", "noname")
-        handler = "/result"
-        group = "no-user"
-        argument = name
+        name = self.get_argument("jobname", None)
+        group_name = self.get_argument("jobgroup", None)
+        parent = get_id_from_user("no-user")
+        job_url = "/result"
 
-        submit(ctx_default, group, name, handler, say_hello, argument)
+        if name is not None:
+            submit(ctx_default, parent, name, job_url, say_hello, name)
+        else:
+            group_url = "/group"
+            group = create_info(group_name, 'group', url=group_url,
+                                parent=parent, store=True)
+            group_id = group['id']
+
+            for i in range(5):
+                name = group_name + '-%d' % i
+                submit(ctx_default, group_id, name, job_url, say_hello, name)
+
         self.redirect('/')
 
 
 class ResultHandler(RequestHandler):
     def get(self, id):
         job_info = loads(r_client.get(id))
-        self.render("moi_result.html", job_info=job_info)
+        self.render("moi_result.html", job_info=job_info,
+                    group_id=job_info['parent'])
+
+
+class GroupHandler(RequestHandler):
+    def get(self, id):
+        self.render("moi_group.html", group_id=id)
 
 
 class MOIApplication(Application):
@@ -65,6 +85,7 @@ class MOIApplication(Application):
             (r"/static/(.*)", StaticFileHandler,
              {"path": STATIC_PATH}),
             (r"/result/(.*)", ResultHandler),
+            (r"/group/(.*)", GroupHandler),
             (r".*", SubmitHandler)
         ]
         settings = {

@@ -4,9 +4,10 @@ from tornado.web import authenticated
 from tornado.websocket import WebSocketHandler
 from tornado.escape import json_encode, json_decode
 
-from moi.group import Group
+from moi.group import Group, get_id_from_user
 
 clients = set()
+
 
 class MOIMessageHandler(WebSocketHandler):
     def __init__(self, *args, **kwargs):
@@ -18,7 +19,7 @@ class MOIMessageHandler(WebSocketHandler):
         if user is None:
             raise ValueError("No user associated with the websocket!")
         else:
-            return user.strip('" ')
+            return get_id_from_user(user.strip('" '))
 
     def open(self):
         clients.add(self)
@@ -40,6 +41,7 @@ class MOIMessageHandler(WebSocketHandler):
         -----
         This method only handles messages where `message_type` is "message".
         """
+        print msg
         if self not in clients:
             return
 
@@ -49,9 +51,14 @@ class MOIMessageHandler(WebSocketHandler):
             # unable to decode so we cannot handle the message
             return
 
+        if 'close' in payload:
+            self.close()
+            return
+
         for verb, args in payload.items():
             self.group.action(verb, args)
 
     def forward(self, payload):
         if self in clients:
-            self.write_message(json_encode(payload))
+            for item in payload:
+                self.write_message(json_encode(item))

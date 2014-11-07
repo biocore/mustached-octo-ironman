@@ -3,8 +3,9 @@
     <head>
         <title>MOI Result</title>
         <script src="/static/moi.js"></script>
+        <script src="/static/moi_list.js"></script>
     </head>
-    <body onload="initialize_moi()">
+    <body onload="moi_list.init('{{ group_id }}')">
 {% if job_info %}
             <table border=1>
                 <th>Key</th><th>Value</th>
