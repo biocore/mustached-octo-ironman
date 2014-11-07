@@ -1,7 +1,11 @@
 mustached-octo-ironman
 ======================
 
-Easy dispatched compute via in a Tornado environment using Redis and IPython. Updates are readily available to the client-side via a websocket and a customizable div.
+Easy dispatched compute via in a Tornado environment using Redis and IPython. Updates are readily available to the client-side via a websocket and a customizable div. The specific goals of `moi` are:
+
+* make compute as easy as possible for the developer
+* automatically propagate job information to end user without requiring developer intervention
+* define the communication protocols for compute -> server, and server <-> web client
 
 This codebase originates from [qiita](https://github.com/biocore/qiita) and is heavily influenced by their dev-team, in particular [@squirrelo](https://github.com/squirrelo) and [@josenavas](https://github.com/josenavas).
 
