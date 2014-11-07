@@ -74,6 +74,7 @@ def _redis_wrap(job_info, func, *args, **kwargs):
 
     status_changer = partial(_status_change, job_info['id'], r_client)
     kwargs['update_status'] = status_changer
+    kwargs['moi_context'] = ctxs
 
     job_info['status'] = 'Running'
     job_info['date_start'] = str(datetime.now())
