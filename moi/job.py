@@ -152,7 +152,8 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
         The handler that can take the results (e.g., /beta_diversity/)
     func : function
         The function to execute. Any returns from this function will be
-        serialized and deposited into Redis using the uuid for a key.
+        serialized and deposited into Redis using the uuid for a key. This
+        function should raise if the method fails.
     args : tuple or None
         Any args for ``f``
     kwargs : dict or None
