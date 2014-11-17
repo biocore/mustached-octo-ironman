@@ -1,12 +1,57 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014--, The qiita Development Team.
+#
+# Distributed under the terms of the BSD 3-clause License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# -----------------------------------------------------------------------------
+
 import json
 from functools import partial
 from datetime import datetime
+from subprocess import Popen, PIPE
 
 from moi import r_client, ctxs, ctx_default, REDIS_KEY_TIMEOUT
 from moi.group import create_info
 
 
-def _status_change(id, redis, new_status):
+def system_call(cmd, **kwargs):
+    """Call cmd and return (stdout, stderr, return_value).
+
+    Parameters
+    ----------
+    cmd: str
+        Can be either a string containing the command to be run, or a sequence
+        of strings that are the tokens of the command.
+    kwargs : dict, optional
+        Ignored. Available so that this function is compatible with
+        _redis_wrap.
+
+    Notes
+    -----
+    This function is ported from QIIME (http://www.qiime.org), previously
+    named qiime_system_call. QIIME is a GPL project, but we obtained permission
+    from the authors of this function to port it to pyqi (and keep it under
+    pyqi's BSD license).
+    """
+    proc = Popen(cmd,
+                 universal_newlines=True,
+                 shell=True,
+                 stdout=PIPE,
+                 stderr=PIPE)
+    # communicate pulls all stdout/stderr from the PIPEs to
+    # avoid blocking -- don't remove this line!
+    stdout, stderr = proc.communicate()
+    return_value = proc.returncode
+
+    if return_value != 0:
+        raise ValueError("Failed to execute: %s\nstdout: %s\nstderr: %s" %
+                         (cmd, stdout, stderr))
+
+    return stdout, stderr, return_value
+
+
+def _status_change(id, new_status):
     """Update the status of a job
 
     The status associated with the id is updated, an update command is
@@ -16,8 +61,6 @@ def _status_change(id, redis, new_status):
     ----------
     id : str
         The job ID
-    redis : Redis
-        A Redis client
     new_status : str
         The status change
 
@@ -26,16 +69,30 @@ def _status_change(id, redis, new_status):
     str
         The old status
     """
-    job_info = json.loads(redis.get(id))
+    job_info = json.loads(r_client.get(id))
     old_status = job_info['status']
     job_info['status'] = new_status
-
-    with redis.pipeline() as pipe:
-        pipe.set(id, json.dumps(job_info), ex=REDIS_KEY_TIMEOUT)
-        pipe.publish(job_info['pubsub'], json.dumps({"update": [id]}))
-        pipe.execute()
+    _deposit_payload(job_info)
 
     return old_status
+
+
+def _deposit_payload(to_deposit):
+    """Store job info, and publish an update
+
+    Parameters
+    ----------
+    to_deposit : dict
+        The job info
+
+    """
+    pubsub = to_deposit['pubsub']
+    id = to_deposit['id']
+
+    with r_client.pipeline() as pipe:
+        pipe.set(id, json.dumps(to_deposit), ex=REDIS_KEY_TIMEOUT)
+        pipe.publish(pubsub, json.dumps({"update": [id]}))
+        pipe.execute()
 
 
 def _redis_wrap(job_info, func, *args, **kwargs):
@@ -55,24 +112,7 @@ def _redis_wrap(job_info, func, *args, **kwargs):
         A function to execute. This function must accept ``**kwargs``, and will
         have ``update_status`` available as a key.
     """
-    def _deposit_payload(to_deposit):
-        """Store job info, and publish an update
-
-        Parameters
-        ----------
-        job_info : dict
-            The job info
-
-        """
-        pubsub = to_deposit['pubsub']
-        id = to_deposit['id']
-        job_data_serialized = json.dumps(to_deposit)
-        with r_client.pipeline() as pipe:
-            pipe.set(id, job_data_serialized, ex=REDIS_KEY_TIMEOUT)
-            pipe.publish(pubsub, json.dumps({"update": [id]}))
-            pipe.execute()
-
-    status_changer = partial(_status_change, job_info['id'], r_client)
+    status_changer = partial(_status_change, job_info['id'])
     kwargs['update_status'] = status_changer
     kwargs['moi_context'] = ctxs
 
@@ -140,7 +180,7 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
         pipe.publish(parent_pubsub_key, json.dumps({'add': [job_id]}))
         pipe.execute()
 
-    ctx.submit_async(_redis_wrap, job_info, func, *args, **kwargs)
+    ctx.bv.apply_async(_redis_wrap, job_info, func, *args, **kwargs)
     return job_id, parent_id
 
 
@@ -159,8 +199,8 @@ def submit_nouser(func, *args, **kwargs):
 
     Returns
     -------
-    str
-        The job ID
+    tuple, (str, str)
+        The job ID and the parent ID
     """
     return submit(ctx_default, "no-user", "unnamed", None, func, *args,
                   **kwargs)
