@@ -46,7 +46,7 @@ Types of compute
 
 Almost function that can be sent over to an IPython client is acceptable. The two expectations are:
 
-* The function accepts `\*\*kwargs`
+* The function accepts `**kwargs`
 * The function raises an exception (doesn't matter what) if the function "failed"
 
 Going one step further, the code also supports system calls through a special function `moi.job.system_call`, where the argument being passed is the command to run. 
