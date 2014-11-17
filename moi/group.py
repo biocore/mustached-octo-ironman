@@ -1,4 +1,12 @@
-"""Redis group communication"""
+r"""Redis group communication"""
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014--, The qiita Development Team.
+#
+# Distributed under the terms of the BSD 3-clause License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# -----------------------------------------------------------------------------
 
 from uuid import uuid4
 
@@ -108,7 +116,11 @@ class Group(object):
         if id_pubsub in self._listening_to:
             del self._listening_to[id_pubsub]
             self.toredis.unsubscribe(id_pubsub)
-            r_client.srem(self.group_children, id_)
+
+            parent = json_decode(r_client.get(id_))['parent']
+            if parent is not None:
+                r_client.srem(_children_key(parent), id_)
+
             return id_
         else:
             return None

@@ -1,3 +1,16 @@
+/**
+ *
+ * @author Daniel McDonald
+ * @copyright Copyright 2014, biocore
+ * @credits Daniel McDonald, Joshua Shorenstein, Jose Navas
+ * @license BSD
+ * @version 0.1.0-dev
+ * @maintainer Daniel McDonald
+ * @email mcdonadt@colorado.edu
+ * @status Development
+ *
+ */
+
 var moi_list = new function () {
     var info_ids = {};
     var info_list = null;

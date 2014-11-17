@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 # -----------------------------------------------------------------------------
-# Copyright (c) 2013, The Qiita Development Team.
+# Copyright (c) 2013, The qiita Development Team.
 #
 # Distributed under the terms of the BSD 3-clause License.
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 
-__version__ = "0.1.0-dev"
+__version__ = "0.1.0"
 
 from setuptools import setup
 

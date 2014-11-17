@@ -1,5 +1,11 @@
-# adapted from
-# https://github.com/leporo/tornado-redis/blob/master/demos/websockets
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014--, The qiita Development Team.
+#
+# Distributed under the terms of the BSD 3-clause License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# -----------------------------------------------------------------------------
+
 from tornado.web import authenticated
 from tornado.websocket import WebSocketHandler
 from tornado.escape import json_encode, json_decode
@@ -9,6 +15,8 @@ from moi.group import Group, get_id_from_user
 clients = set()
 
 
+# adapted from
+# https://github.com/leporo/tornado-redis/blob/master/demos/websockets
 class MOIMessageHandler(WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super(MOIMessageHandler, self).__init__(*args, **kwargs)
@@ -41,7 +49,6 @@ class MOIMessageHandler(WebSocketHandler):
         -----
         This method only handles messages where `message_type` is "message".
         """
-        print msg
         if self not in clients:
             return
 

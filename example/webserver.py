@@ -1,3 +1,10 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014--, The qiita Development Team.
+#
+# Distributed under the terms of the BSD 3-clause License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# -----------------------------------------------------------------------------
 from os.path import join, dirname
 from base64 import b64encode
 from uuid import uuid4
