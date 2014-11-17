@@ -117,13 +117,12 @@ class Group(object):
             del self._listening_to[id_pubsub]
             self.toredis.unsubscribe(id_pubsub)
 
-            parent = json_decode(r_client.get(id_))['parent']
+            parent = json_decode(r_client.get(id_)).get('parent', None)
             if parent is not None:
                 r_client.srem(_children_key(parent), id_)
+            r_client.srem(self.group_children, id_)
 
             return id_
-        else:
-            return None
 
     def callback(self, msg):
         """Accept a message that was published, process and forward

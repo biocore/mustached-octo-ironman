@@ -64,6 +64,7 @@ class GroupTests(TestCase):
         class forwarder(object):
             def __init__(self):
                 self.result = None
+
             def __call__(self, data):
                 self.result = list(data)
 
@@ -72,10 +73,13 @@ class GroupTests(TestCase):
 
         self.obj.callback(('message', 'testing:pubsub', dumps({'get': ['b']})))
         self.assertEqual(fwd.result,
-            [{'get': {u'id': u'b', u'name': u'b', u'type': u'job'}}])
+                         [{'get': {u'id': u'b',
+                                   u'name': u'b',
+                                   u'type': u'job'}}])
         self.obj.callback(('message', 'a:pubsub', dumps({'update': ['a']})))
-        self.assertEqual(fwd.result, [{'update':
-            {u'id': u'a', u'name': u'a', u'type': u'job'}}])
+        self.assertEqual(fwd.result, [{'update': {u'id': u'a',
+                                                  u'name': u'a',
+                                                  u'type': u'job'}}])
 
         with self.assertRaises(ValueError):
             self.obj.callback(('message', 'testing:pubsub',
@@ -87,6 +91,7 @@ class GroupTests(TestCase):
         class forwarder(object):
             def __init__(self):
                 self.result = None
+
             def __call__(self, data):
                 self.result = list(data)
 
@@ -116,6 +121,7 @@ class GroupTests(TestCase):
         class forwarder(object):
             def __init__(self):
                 self.result = None
+
             def __call__(self, data):
                 self.result = list(data)
 
@@ -123,9 +129,12 @@ class GroupTests(TestCase):
         self.obj.forwarder = fwd
 
         self.obj.job_action('update', ['a', 'b'])
-        self.assertEqual(fwd.result,
-            [{'update': {u'id': u'a', u'name': u'a', u'type': u'job'}},
-             {'update': {u'id': u'b', u'name': u'b', u'type': u'job'}}])
+        self.assertEqual(fwd.result, [{'update': {u'id': u'a',
+                                                  u'name': u'a',
+                                                  u'type': u'job'}},
+                                      {'update': {u'id': u'b',
+                                                  u'name': u'b',
+                                                  u'type': u'job'}}])
 
         with self.assertRaises(TypeError):
             self.obj.job_action('add', 'foo')
