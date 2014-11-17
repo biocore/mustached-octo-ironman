@@ -36,5 +36,5 @@ ctxs = {name: Context(name)
         for name in _config.get('ipython', 'context').split(',')}
 ctx_default = _config.get('ipython', 'default')
 
-__version__ = '0.1.0'
+__version__ = '0.1.0-dev'
 __all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT']
