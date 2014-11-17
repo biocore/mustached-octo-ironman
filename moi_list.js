@@ -4,7 +4,7 @@
  * @copyright Copyright 2014, biocore
  * @credits Daniel McDonald, Joshua Shorenstein, Jose Navas
  * @license BSD
- * @version 0.1.0-dev
+ * @version 0.1.0
  * @maintainer Daniel McDonald
  * @email mcdonadt@colorado.edu
  * @status Development

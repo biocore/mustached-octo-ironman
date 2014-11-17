@@ -4,7 +4,7 @@
  * @copyright Copyright 2014, biocore
  * @credits Daniel McDonald, Joshua Shorenstein, Jose Navas
  * @license BSD
- * @version 0.1.0-dev
+ * @version 0.1.0
  * @maintainer Daniel McDonald
  * @email mcdonadt@colorado.edu
  * @status Development
@@ -19,7 +19,7 @@
  *
  */
 var moi = new function () {
-    this.VERSION = '0.1.0-dev';
+    this.VERSION = '0.1.0';
 
     var
       /* the server end of the websocket */
