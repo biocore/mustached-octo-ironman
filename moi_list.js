@@ -117,7 +117,6 @@ var moi_list = new function () {
         document.body.appendChild(info_list);
         
         moi.add_callback('add', addInfo);
-        moi.add_callback('get', addInfo);
         moi.add_callback('remove', removeInfo);
         moi.add_callback('update', updateInfo);
         moi.init();
