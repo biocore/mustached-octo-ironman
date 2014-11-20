@@ -34,7 +34,7 @@ COOKIE_SECRET = b64encode(uuid4().bytes + uuid4().bytes)
 
 def say_hello(name, **kwargs):
     from time import sleep
-    kwargs['update_status']("I'm about to say hello")
+    kwargs['moi_update_status']("I'm about to say hello")
     sleep(5)
     return "hello from %s!" % name
 

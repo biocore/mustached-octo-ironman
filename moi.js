@@ -4,7 +4,7 @@
  * @copyright Copyright 2014, biocore
  * @credits Daniel McDonald, Joshua Shorenstein, Jose Navas
  * @license BSD
- * @version 0.1.0
+ * @version 0.1.0-dev
  * @maintainer Daniel McDonald
  * @email mcdonadt@colorado.edu
  * @status Development
@@ -19,7 +19,7 @@
  *
  */
 var moi = new function () {
-    this.VERSION = '0.1.0';
+    this.VERSION = '0.1.0-dev';
 
     var
       /* the server end of the websocket */
@@ -65,15 +65,25 @@ var moi = new function () {
      * Verify the browser supports websockets, and if so, initialize the
      * websocket. On construction, this method will send a message over the
      * socket to get all known job information associated with this client.
+     *
+     * @param {group_id} A group ID to get initial data from, or null to fetch 
+     * all records associated with the user. 
      */
-    this.init = function() {
+    this.init = function(group_id) {
         if (!("WebSocket" in window)) {
             alert("Your browser does not appear to support websockets!");
             return;
         }
         ws = new WebSocket(host);
+        
+        var on_open_message = null;
+        if (group_id == null) {
+            on_open_message = [];
+        } else {
+            on_open_message = [group_id];
+        }
 
-        ws.onopen = function() {ws.send(encode({"get": []}))};
+        ws.onopen = function() {ws.send(encode({"get": on_open_message}))};
         ws.onclose = function(evt) {ws.send(encode({"close": null}))};
         ws.onerror = function(evt) {};
 

@@ -4,7 +4,7 @@
  * @copyright Copyright 2014, biocore
  * @credits Daniel McDonald, Joshua Shorenstein, Jose Navas
  * @license BSD
- * @version 0.1.0
+ * @version 0.1.0-dev
  * @maintainer Daniel McDonald
  * @email mcdonadt@colorado.edu
  * @status Development
@@ -105,10 +105,13 @@ var moi_list = new function () {
         }
         else {
             status_msg = document.getElementById(info.id + ":status");
-            status_msg.innerHTML = info.status;
+            
+            if (!(status_msg == null)) {
+                // if a result has been set, then the status is no more
+                status_msg.innerHTML = info.status;
+            }
         }
     };
-
 
     this.init = function (group_id) {
         restrict_to_group_id = group_id;
@@ -117,8 +120,9 @@ var moi_list = new function () {
         document.body.appendChild(info_list);
         
         moi.add_callback('add', addInfo);
+        moi.add_callback('get', addInfo);
         moi.add_callback('remove', removeInfo);
         moi.add_callback('update', updateInfo);
-        moi.init();
+        moi.init(group_id);
     };
 };

@@ -14,7 +14,7 @@ import toredis
 from redis import ResponseError
 from tornado.escape import json_decode, json_encode
 
-from moi import r_client
+from moi import r_client, ctx_default
 
 _children_key = lambda x: x + ':children'
 _pubsub_key = lambda x: x + ':pubsub'
@@ -224,6 +224,8 @@ class Group(object):
 
         if verb == 'update':
             response = ({'update': i} for i in self._action_get(args))
+        elif verb == 'add':
+            response = ({'add': i} for i in self._action_add(args))
         else:
             raise ValueError("Unknown job action: %s" % verb)
 
@@ -279,7 +281,11 @@ class Group(object):
         if not ids:
             ids = self.jobs
         result = []
-        for id_ in ids:
+
+        ids = set(ids)
+        while ids:
+            id_ = ids.pop()
+
             if id_ is None:
                 continue
 
@@ -296,10 +302,16 @@ class Group(object):
                 continue
             else:
                 result.append(payload)
+
+            if payload['type'] == 'group':
+                for obj in self._traverse(id_):
+                    ids.add(obj['id'])
+
         return result
 
 
-def create_info(name, info_type, url=None, parent=None, id=None, store=False):
+def create_info(name, info_type, url=None, parent=None, id=None,
+                context=ctx_default, store=False):
     """Return a group object"""
     id = str(uuid4()) if id is None else id
     pubsub = _pubsub_key(id)
@@ -309,6 +321,7 @@ def create_info(name, info_type, url=None, parent=None, id=None, store=False):
             'pubsub': pubsub,
             'url': url,
             'parent': parent,
+            'context': context,
             'name': name,
             'status': 'Queued' if info_type == 'job' else None,
             'date_start': None,

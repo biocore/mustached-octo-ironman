@@ -6,6 +6,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 
+import sys
+import traceback
 import json
 from functools import partial
 from datetime import datetime
@@ -13,6 +15,7 @@ from subprocess import Popen, PIPE
 
 from moi import r_client, ctxs, ctx_default, REDIS_KEY_TIMEOUT
 from moi.group import create_info
+from moi.context import Context
 
 
 def system_call(cmd, **kwargs):
@@ -98,11 +101,11 @@ def _deposit_payload(to_deposit):
 def _redis_wrap(job_info, func, *args, **kwargs):
     """Wrap something to compute
 
-    The function that will have available, via kwargs['update_status'], a
+    The function that will have available, via kwargs['moi_update_status'], a
     method to modify the job status. This method can be used within the
     executing function by:
 
-        old_status = kwargs['update_status']('my new status')
+        old_status = kwargs['moi_update_status']('my new status')
 
     Parameters
     ----------
@@ -110,32 +113,53 @@ def _redis_wrap(job_info, func, *args, **kwargs):
        Redis job details
     func : function
         A function to execute. This function must accept ``**kwargs``, and will
-        have ``update_status`` available as a key.
+        have ``moi_update_status``, ``moi_context`` and ``moi_parent_id``
+        available.
+
+    Raises
+    ------
+    Exception
+        If the function called raises, that exception is propagated.
+
+    Returns
+    -------
+    Anything the function executed returns.
     """
     status_changer = partial(_status_change, job_info['id'])
-    kwargs['update_status'] = status_changer
-    kwargs['moi_context'] = ctxs
+    kwargs['moi_update_status'] = status_changer
+    kwargs['moi_context'] = job_info['context']
+    kwargs['moi_parent_id'] = job_info['parent']
 
     job_info['status'] = 'Running'
     job_info['date_start'] = str(datetime.now())
 
     _deposit_payload(job_info)
+
+    caught = None
     try:
-        job_info['result'] = func(*args, **kwargs)
+        result = func(*args, **kwargs)
         job_info['status'] = 'Success'
-    except Exception:
-        import sys
-        import traceback
-        job_info['result'] = traceback.format_exception(*sys.exc_info())
+    except Exception as e:
+        result = traceback.format_exception(*sys.exc_info())
         job_info['status'] = 'Failed'
+        caught = e
     finally:
+        job_info['result'] = result
         job_info['date_end'] = str(datetime.now())
         _deposit_payload(job_info)
+
+    if caught is None:
+        return result
+    else:
+        raise caught
 
 
 def submit(ctx_name, *args, **kwargs):
     """Submit through a context"""
-    ctx = ctxs.get(ctx_name, ctx_default)
+    if isinstance(ctx_name, Context):
+        ctx = ctx_name
+    else:
+        ctx = ctxs.get(ctx_name, ctx_default)
     return _submit(ctx, *args, **kwargs)
 
 
@@ -161,7 +185,7 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
 
     Returns
     -------
-    tuple, (str, str)
+    tuple, (str, str, AsyncResult)
         The job ID and the parent ID
     """
     parent_info = r_client.get(parent_id)
@@ -172,7 +196,8 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
 
     parent_pubsub_key = parent_id + ':pubsub'
 
-    job_info = create_info(name, 'job', url=url, parent=parent_id, store=True)
+    job_info = create_info(name, 'job', url=url, parent=parent_id,
+                           context=ctx.name, store=True)
     job_info['status'] = 'Queued'
     job_id = job_info['id']
 
@@ -181,8 +206,8 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
         pipe.publish(parent_pubsub_key, json.dumps({'add': [job_id]}))
         pipe.execute()
 
-    ctx.bv.apply_async(_redis_wrap, job_info, func, *args, **kwargs)
-    return job_id, parent_id
+    ar = ctx.bv.apply_async(_redis_wrap, job_info, func, *args, **kwargs)
+    return job_id, parent_id, ar
 
 
 def submit_nouser(func, *args, **kwargs):
