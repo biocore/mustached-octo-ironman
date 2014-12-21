@@ -286,7 +286,8 @@ class Group(object):
             ids = self.jobs
         result = []
 
-        ids = set(ids)
+        ids_seen = set()
+        ids = list(ids)
         while ids:
             id_ = ids.pop()
 
@@ -309,7 +310,10 @@ class Group(object):
 
             if payload['type'] == 'group':
                 for obj in self._traverse(id_):
-                    ids.add(obj['id'])
+                    id_ = obj['id']
+                    if id_ not in ids_seen:
+                        ids.add(id_)
+                        ids_seen.add(id_)
 
         return result
 
