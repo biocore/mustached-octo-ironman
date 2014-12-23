@@ -7,12 +7,14 @@
 # -----------------------------------------------------------------------------
 import os
 
+from tornado.ioloop import IOLoop
 from redis import Redis
 from future import standard_library
 with standard_library.hooks():
     from configparser import ConfigParser
 
 from moi.context import Context
+from moi.pubsub import PubSub
 
 
 REDIS_KEY_TIMEOUT = 84600 * 14  # two weeks
@@ -30,6 +32,8 @@ r_client = Redis(host=_config.get('redis', 'host'),
                  password=_config.get('redis', 'password'),
                  db=_config.get('redis', 'db'))
 
+# Instantiate the pubsub object
+pubsub = PubSub(r_client, IOLoop.instance())
 
 # setup contexts
 ctxs = {name: Context(name)
@@ -37,4 +41,4 @@ ctxs = {name: Context(name)
 ctx_default = _config.get('ipython', 'default')
 
 __version__ = '0.1.0-dev'
-__all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT']
+__all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT', 'pubsub']

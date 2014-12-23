@@ -72,7 +72,7 @@ def _status_change(id, new_status):
     str
         The old status
     """
-    job_info = json.loads(r_client.get(id))
+    job_info = json.loads(r_client.get(id).decode('utf-8'))
     old_status = job_info['status']
     job_info['status'] = new_status
     _deposit_payload(job_info)

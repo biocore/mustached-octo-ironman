@@ -24,7 +24,9 @@ class MOITests(TestCase):
 
         self.test_job_info = {'status': 'old status',
                               'id': self.test_id,
-                              'pubsub': self.test_pubsub}
+                              'pubsub': self.test_pubsub,
+                              'context': list(ctxs)[0],
+                              'parent': None}
 
     def tearDown(self):
         for k in self.test_keys:
@@ -40,7 +42,7 @@ class MOITests(TestCase):
 
     def test_deposit_payload(self):
         _deposit_payload(self.test_job_info)
-        obs = json.loads(r_client.get(self.test_id))
+        obs = json.loads(r_client.get(self.test_id).decode('utf-8'))
         self.assertEqual(obs, self.test_job_info)
 
     def test_redis_wrap(self):
@@ -51,17 +53,20 @@ class MOITests(TestCase):
         _redis_wrap(self.test_job_info, foo, 1, 2)
 
         sleep(2)
-        obs = json.loads(r_client.get(self.test_job_info['id']))
+        obs = json.loads(
+            r_client.get(self.test_job_info['id']).decode('utf-8'))
         self.assertEqual(obs['result'], 3)
         self.assertEqual(obs['status'], 'Success')
         self.assertNotEqual(obs['date_start'], None)
         self.assertNotEqual(obs['date_end'], None)
 
         r_client.set(self.test_job_info['id'], json.dumps(self.test_job_info))
-        _redis_wrap(self.test_job_info, foo, 1, 2, 3)
+        with self.assertRaises(TypeError):
+            _redis_wrap(self.test_job_info, foo, 1, 2, 3)
 
         sleep(2)
-        obs = json.loads(r_client.get(self.test_job_info['id']))
+        obs = json.loads(
+            r_client.get(self.test_job_info['id']).decode('utf-8'))
         self.assertEqual(obs['result'][0],
                          u'Traceback (most recent call last):\n')
         self.assertEqual(obs['status'], 'Failed')
@@ -73,27 +78,29 @@ class MOITests(TestCase):
             return a+b+c
 
         for ctx in ctxs:
-            id_, pid_ = submit(ctx, 'no parent', 'test', '/', foo, 1, 2, c=15)
+            id_, pid_, async_result = submit(ctx, 'no parent', 'test', '/',
+                                             foo, 1, 2, c=15)
             self.test_keys.append(id_)
             self.test_keys.append(pid_)
 
             sleep(2)
 
-            obs = json.loads(r_client.get(id_))
+            obs = json.loads(r_client.get(id_).decode('utf-8'))
             self.assertEqual(obs['result'], 18)
             self.assertEqual(obs['status'], 'Success')
             self.assertNotEqual(obs['date_start'], None)
             self.assertNotEqual(obs['date_end'], None)
 
     def test__submit(self):
-        ctx = ctxs.values()[0]
+        ctx = list(ctxs.values())[0]
         cmd = 'echo "hello"'
-        id_, pid_ = _submit(ctx, 'no parent', 'test', '/', system_call, cmd)
+        id_, pid_, async_result = _submit(ctx, 'no parent', 'test', '/',
+                                          system_call, cmd)
         self.test_keys.append(id_)
         self.test_keys.append(pid_)
         sleep(2)
 
-        obs = json.loads(r_client.get(id_))
+        obs = json.loads(r_client.get(id_).decode('utf-8'))
         self.assertEqual(obs['result'], [u"hello\n", u"", 0])
         self.assertEqual(obs['status'], 'Success')
         self.assertNotEqual(obs['date_start'], None)
@@ -103,13 +110,13 @@ class MOITests(TestCase):
         def foo(a, b, c=10, **kwargs):
             return a+b+c
 
-        id_, pid_ = submit_nouser(foo, 1, 2, c=20)
+        id_, pid_, async_result = submit_nouser(foo, 1, 2, c=20)
         self.test_keys.append(id_)
         self.test_keys.append(pid_)
 
         sleep(2)
 
-        obs = json.loads(r_client.get(id_))
+        obs = json.loads(r_client.get(id_).decode('utf-8'))
         self.assertEqual(obs['result'], 23)
         self.assertEqual(obs['status'], 'Success')
         self.assertNotEqual(obs['date_start'], None)

@@ -40,7 +40,7 @@ setup(name='moi',
       test_suite='nose.collector',
       packages=['moi'],
       extras_require={'test': ["nose >= 0.10.1", "pep8", 'mock']},
-      install_requires=['future==0.13.0', 'tornado==3.1.1', 'toredis', 'redis',
+      install_requires=['future==0.13.0', 'tornado==3.1.1', 'redis',
                         'ipython[all]'],
       classifiers=classifiers
       )
