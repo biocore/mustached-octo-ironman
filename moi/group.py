@@ -10,11 +10,10 @@ r"""Redis group communication"""
 
 from uuid import uuid4
 
-import toredis
 from redis import ResponseError
 from tornado.escape import json_decode, json_encode
 
-from moi import r_client, ctx_default
+from moi import r_client, ctx_default, pubsub
 
 _children_key = lambda x: x + ':children'
 _pubsub_key = lambda x: x + ':pubsub'
@@ -32,14 +31,15 @@ class Group(object):
         `dict`. Any return is ignored.
     """
     def __init__(self, group, forwarder=None):
-        self.toredis = toredis.Client()
-        self.toredis.connect()
-
+        # Keep track of the channels that we are listening along with the
+        # function that we will need to execute to unsubscribe from the channel
+        # Format: {pubsub_key: (id, function)}
         self._listening_to = {}
 
         self.group = group
         self.group_children = _children_key(group)
         self.group_pubsub = _pubsub_key(group)
+        self.group_unsubscriber = None
 
         if forwarder is None:
             self.forwarder = lambda x: None
@@ -70,9 +70,10 @@ class Group(object):
 
     def close(self):
         """Unsubscribe the group and all jobs being listened too"""
-        for channel in self._listening_to:
-            self.toredis.unsubscribe(channel)
-        self.toredis.unsubscribe(self.group_pubsub)
+        for _, unsubscriber in self._listening_to.values():
+            unsubscriber()
+
+        self.group_unsubscriber()
 
     def _decode(self, data):
         try:
@@ -83,19 +84,21 @@ class Group(object):
     @property
     def jobs(self):
         """Get the known job IDs"""
-        return self._listening_to.values()
+        return [val[0] for val in self._listening_to.values()]
 
     def listen_for_updates(self):
         """Attach a callback on the group pubsub"""
-        self.toredis.subscribe(self.group_pubsub, callback=self.callback)
+        self.group_unsubscriber = pubsub.subscribe(self.group_pubsub,
+                                                   self.callback)
 
     def listen_to_node(self, id_):
         """Attach a callback on the job pubsub if it exists"""
         if r_client.get(id_) is None:
             return
         else:
-            self.toredis.subscribe(_pubsub_key(id_), callback=self.callback)
-            self._listening_to[_pubsub_key(id_)] = id_
+            key = _pubsub_key(id_)
+            unsubscriber = pubsub.subscribe(key, callback=self.callback)
+            self._listening_to[key] = (id_, unsubscriber)
             return id_
 
     def unlisten_to_node(self, id_):
@@ -114,8 +117,9 @@ class Group(object):
         id_pubsub = _pubsub_key(id_)
 
         if id_pubsub in self._listening_to:
+            _, unsubcriber = self._listening_to[id_pubsub]
             del self._listening_to[id_pubsub]
-            self.toredis.unsubscribe(id_pubsub)
+            unsubcriber()
 
             parent = json_decode(r_client.get(id_)).get('parent', None)
             if parent is not None:
@@ -282,7 +286,8 @@ class Group(object):
             ids = self.jobs
         result = []
 
-        ids = set(ids)
+        ids_seen = set()
+        ids = list(ids)
         while ids:
             id_ = ids.pop()
 
@@ -305,7 +310,10 @@ class Group(object):
 
             if payload['type'] == 'group':
                 for obj in self._traverse(id_):
-                    ids.add(obj['id'])
+                    id_ = obj['id']
+                    if id_ not in ids_seen:
+                        ids.add(id_)
+                        ids_seen.add(id_)
 
         return result
 
