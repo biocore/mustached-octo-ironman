@@ -81,8 +81,7 @@ var moi = new function () {
             return;
         }
         //check if we need regular or secure websocket
-        socket = 'ws://';
-        if(window.location.protocol == "https:") { socket = 'wss://'; }
+        socket = window.location.protocol == "https:" ? 'wss://' : 'ws://';
         ws = new WebSocket(socket + host);
 
         var on_open_message = null;
