@@ -5,5 +5,8 @@ password =
 db = 0
 
 [ipython]
-context=qiita_general,qiita_reserved
-default=qiita_general
+# context can be a comma separated list of IPython parallel profiles
+context=general
+
+# The default context to be used
+default=general
