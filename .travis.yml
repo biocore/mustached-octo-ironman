@@ -1,0 +1,28 @@
+language: python
+env:
+  - PYTHON_VERSION=2.7 IPYTHON_VERSION=2.4.1
+  - PYTHON_VERSION=2.7 IPYTHON_VERSION=3.1.0
+  - PYTHON_VERSION=2.7 IPYTHON_VERSION=all
+before_install:
+  - redis-server --version
+  - wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda3/bin:$PATH
+  # Update conda itself
+  - conda update --yes conda
+install:
+  - travis_retry conda create --yes -n env_name python=$PYTHON_VERSION pip nose flake8 future==0.13.0
+  - source activate env_name
+  - pip install coveralls ipython[all]==$IPYTHON_VERSION
+  - travis_retry pip install -e . --no-deps
+script:
+  - export MOI_CONFIG_FP=`pwd`/moi_config.txt
+  - ipython profile create general --parallel
+  - ipcluster start --n=2 --profile=general --daemonize=True
+  - nosetests --with-doctest --with-coverage
+  - flake8 moi setup.py
+services:
+  - redis-server
+after_success:
+  - coveralls
