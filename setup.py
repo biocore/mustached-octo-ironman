@@ -7,11 +7,9 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-
-__version__ = "0.1.0"
-
 from setuptools import setup
 
+__version__ = "0.1.0-dev"
 
 classes = """
     Development Status :: 4 - Beta
