@@ -11,8 +11,6 @@ before_install:
   # Update conda itself
   - conda update --yes conda
 install:
-      install_requires=['future==0.13.0', 'tornado==3.1.1', 'toredis', 'redis',
-                        'ipython[all]'],
   - travis_retry conda create --yes -n env_name python=$PYTHON_VERSION pip nose flake8 future==0.13.0 redis tornado
   - source activate env_name
   - pip install coveralls toredis ipython[all]==$IPYTHON_VERSION
