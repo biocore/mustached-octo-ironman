@@ -14,7 +14,7 @@ install:
   - travis_retry conda create --yes -n env_name python=$PYTHON_VERSION pip nose flake8 future==0.13.0 tornado
   - source activate env_name
   - pip install coveralls redis toredis ipython[all]==$IPYTHON_VERSION
-  - travis_retry pip install -e .
+  - travis_retry pip install .
 script:
   - export MOI_CONFIG_FP=`pwd`/moi_config.txt
   - ipython profile create general --parallel
