@@ -74,7 +74,7 @@ var moi = new function () {
      * @param {on_close} Optional function for action when websocket is closed.
      * @param {on_error} Optional function for action when websocket errors.
      */
-    this.init = function(host, group_id, on_open, on_close, on_error) {
+    this.init = function(group_id, host, on_open, on_close, on_error) {
         host = host || window.location.host + '/moi-ws/';
         if (!("WebSocket" in window)) {
             alert("Your browser does not appear to support websockets!");
