@@ -99,15 +99,15 @@ class GroupTests(TestCase):
         self.obj.forwarder = fwd
 
         self.obj.action('add', ['d', 'e'])
-        self.assertEqual(fwd.result, [
+        self.assertEqual(sorted(fwd.result), sorted([
             {'add': {u'id': u'd', u'name': u'other job', u'type': u'job'}},
-            {'add': {u'id': u'e', u'name': u'other job e', u'type': u'job'}}])
+            {'add': {u'id': u'e', u'name': u'other job e', u'type': u'job'}}]))
         self.obj.action('remove', ['e', 'd'])
-        self.assertEqual(fwd.result, [
+        self.assertEqual(sorted(fwd.result), sorted([
             {'remove':
                 {u'id': u'e', u'name': u'other job e', u'type': u'job'}},
             {'remove':
-                {u'id': u'd', u'name': u'other job', u'type': u'job'}}])
+                {u'id': u'd', u'name': u'other job', u'type': u'job'}}]))
         self.obj.action('remove', ['d'])
         self.assertEqual(fwd.result, [])
 
@@ -144,9 +144,9 @@ class GroupTests(TestCase):
 
     def test_action_add(self):
         resp = self.obj._action_add(['d', 'f', 'e'])
-        self.assertEqual(resp, [
+        self.assertEqual(sorted(resp), sorted([
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
-            {u'id': u'e', u'name': u'other job e', u'type': u'job'}])
+            {u'id': u'e', u'name': u'other job e', u'type': u'job'}]))
         self.assertIn('d:pubsub', self.obj._listening_to)
         self.assertIn('e:pubsub', self.obj._listening_to)
         self.assertNotIn('f:pubsub', self.obj._listening_to)
@@ -154,11 +154,11 @@ class GroupTests(TestCase):
     def test_action_remove(self):
         self.obj._action_add(['d', 'f', 'e'])
         resp = self.obj._action_remove(['a', 'd', 'f', 'c', 'e'])
-        self.assertEqual(resp, [
+        self.assertEqual(sorted(resp), sorted([
             {u'id': u'a', u'name': u'a', u'type': u'job'},
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
             {u'id': u'c', u'name': u'c', u'type': u'job'},
-            {u'id': u'e', u'name': u'other job e', u'type': u'job'}])
+            {u'id': u'e', u'name': u'other job e', u'type': u'job'}]))
 
         self.assertNotIn('a:pubsub', self.obj._listening_to)
         self.assertNotIn('c:pubsub', self.obj._listening_to)
@@ -169,9 +169,9 @@ class GroupTests(TestCase):
 
     def test_action_get(self):
         resp = self.obj._action_get(['d', 'f', 'e', None])
-        self.assertEqual(resp, [
+        self.assertEqual(sorted(resp), sorted([
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
-            {u'id': u'e', u'name': u'other job e', u'type': u'job'}])
+            {u'id': u'e', u'name': u'other job e', u'type': u'job'}]))
 
 
 if __name__ == '__main__':
