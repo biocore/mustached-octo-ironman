@@ -16,8 +16,37 @@ from tornado.escape import json_decode, json_encode
 
 from moi import r_client, ctx_default
 
-_children_key = lambda x: x + ':children'
-_pubsub_key = lambda x: x + ':pubsub'
+
+def _children_key(key):
+    """Create a key that corresponds to the group's children
+
+    Parameters
+    ----------
+    key : str
+        The group key
+
+    Returns
+    -------
+    str
+        The augmented key
+    """
+    return key + ':children'
+
+
+def _pubsub_key(key):
+    """Create a pubsub key that corresponds to the group's pubsub
+
+    Parameters
+    ----------
+    key : str
+        The group key
+
+    Returns
+    -------
+    str
+        The augmented key
+    """
+    return key + ':pubsub'
 
 
 class Group(object):
