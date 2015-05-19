@@ -99,9 +99,9 @@ class GroupTests(TestCase):
         self.obj.forwarder = fwd
 
         self.obj.action('add', ['d', 'e'])
-        self.assertEqual(sorted(fwd.result), sorted([
+        self.assertItemsEqual(fwd.result, [
             {'add': {u'id': u'd', u'name': u'other job', u'type': u'job'}},
-            {'add': {u'id': u'e', u'name': u'other job e', u'type': u'job'}}]))
+            {'add': {u'id': u'e', u'name': u'other job e', u'type': u'job'}}])
         self.obj.action('remove', ['e', 'd'])
         self.assertEqual(sorted(fwd.result), sorted([
             {'remove':
