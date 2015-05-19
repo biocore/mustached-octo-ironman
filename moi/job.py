@@ -159,7 +159,7 @@ def submit(ctx_name, *args, **kwargs):
     if isinstance(ctx_name, Context):
         ctx = ctx_name
     else:
-        ctx = ctxs.get(ctx_name, ctx_default)
+        ctx = ctxs.get(ctx_name, ctxs[ctx_default])
     return _submit(ctx, *args, **kwargs)
 
 

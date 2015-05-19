@@ -48,16 +48,16 @@ class GroupTests(TestCase):
         pass  # nothing to test...
 
     def test_listen_to_node(self):
-        self.assertEqual(sorted(self.obj._listening_to.items()),
-                         [('a:pubsub', 'a'),
-                          ('b:pubsub', 'b'),
-                          ('c:pubsub', 'c')])
+        self.assertItemsEqual(self.obj._listening_to.items(),
+                              [('a:pubsub', 'a'),
+                               ('b:pubsub', 'b'),
+                               ('c:pubsub', 'c')])
 
     def test_unlisten_to_node(self):
         self.assertEqual(self.obj.unlisten_to_node('b'), 'b')
-        self.assertEqual(sorted(self.obj._listening_to.items()),
-                         [('a:pubsub', 'a'),
-                          ('c:pubsub', 'c')])
+        self.assertItemsEqual(self.obj._listening_to.items(),
+                              [('a:pubsub', 'a'),
+                               ('c:pubsub', 'c')])
         self.assertEqual(self.obj.unlisten_to_node('foo'), None)
 
     def test_callback(self):
@@ -99,11 +99,11 @@ class GroupTests(TestCase):
         self.obj.forwarder = fwd
 
         self.obj.action('add', ['d', 'e'])
-        self.assertEqual(fwd.result, [
+        self.assertItemsEqual(fwd.result, [
             {'add': {u'id': u'd', u'name': u'other job', u'type': u'job'}},
             {'add': {u'id': u'e', u'name': u'other job e', u'type': u'job'}}])
         self.obj.action('remove', ['e', 'd'])
-        self.assertEqual(fwd.result, [
+        self.assertItemsEqual(fwd.result, [
             {'remove':
                 {u'id': u'e', u'name': u'other job e', u'type': u'job'}},
             {'remove':
@@ -144,7 +144,7 @@ class GroupTests(TestCase):
 
     def test_action_add(self):
         resp = self.obj._action_add(['d', 'f', 'e'])
-        self.assertEqual(resp, [
+        self.assertItemsEqual(resp, [
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
             {u'id': u'e', u'name': u'other job e', u'type': u'job'}])
         self.assertIn('d:pubsub', self.obj._listening_to)
@@ -154,7 +154,7 @@ class GroupTests(TestCase):
     def test_action_remove(self):
         self.obj._action_add(['d', 'f', 'e'])
         resp = self.obj._action_remove(['a', 'd', 'f', 'c', 'e'])
-        self.assertEqual(resp, [
+        self.assertItemsEqual(resp, [
             {u'id': u'a', u'name': u'a', u'type': u'job'},
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
             {u'id': u'c', u'name': u'c', u'type': u'job'},
@@ -169,7 +169,7 @@ class GroupTests(TestCase):
 
     def test_action_get(self):
         resp = self.obj._action_get(['d', 'f', 'e', None])
-        self.assertEqual(resp, [
+        self.assertItemsEqual(resp, [
             {u'id': u'd', u'name': u'other job', u'type': u'job'},
             {u'id': u'e', u'name': u'other job e', u'type': u'job'}])
 

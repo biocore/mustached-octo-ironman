@@ -12,7 +12,7 @@ from future import standard_library
 with standard_library.hooks():
     from configparser import ConfigParser
 
-from moi.context import Context
+from moi.context import Context  # noqa
 
 
 REDIS_KEY_TIMEOUT = 84600 * 14  # two weeks

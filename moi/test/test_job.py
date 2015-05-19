@@ -11,7 +11,7 @@ import json
 from unittest import TestCase, main
 from time import sleep
 
-from moi import r_client, ctxs
+from moi import r_client, ctxs, ctx_default
 from moi.job import (_status_change, _redis_wrap, submit, _submit,
                      submit_nouser, _deposit_payload, system_call)
 
@@ -24,6 +24,8 @@ class MOITests(TestCase):
 
         self.test_job_info = {'status': 'old status',
                               'id': self.test_id,
+                              'parent': None,
+                              'context': ctx_default,
                               'pubsub': self.test_pubsub}
 
     def tearDown(self):
@@ -35,8 +37,12 @@ class MOITests(TestCase):
 
         r_client.set(self.test_id, json.dumps(self.test_job_info))
 
+        # _status_change will return the old status
         obs = _status_change(self.test_id, new_status)
         self.assertEqual(obs, self.test_job_info['status'])
+
+        obs = json.loads(r_client.get(self.test_id))
+        self.assertEqual(obs['status'], new_status)
 
     def test_deposit_payload(self):
         _deposit_payload(self.test_job_info)
@@ -48,19 +54,25 @@ class MOITests(TestCase):
             return a+b
 
         r_client.set(self.test_job_info['id'], json.dumps(self.test_job_info))
-        _redis_wrap(self.test_job_info, foo, 1, 2)
+        obs_ret = _redis_wrap(self.test_job_info, foo, 1, 2)
 
-        sleep(2)
+        sleep(1)
         obs = json.loads(r_client.get(self.test_job_info['id']))
         self.assertEqual(obs['result'], 3)
+        self.assertEqual(obs_ret, obs['result'])
         self.assertEqual(obs['status'], 'Success')
         self.assertNotEqual(obs['date_start'], None)
         self.assertNotEqual(obs['date_end'], None)
 
         r_client.set(self.test_job_info['id'], json.dumps(self.test_job_info))
-        _redis_wrap(self.test_job_info, foo, 1, 2, 3)
 
-        sleep(2)
+    def test_redis_wrap_except(self):
+        def foo(a, b, **kwargs):
+            return a+b
+
+        with self.assertRaises(TypeError):
+            _redis_wrap(self.test_job_info, foo, 1)
+
         obs = json.loads(r_client.get(self.test_job_info['id']))
         self.assertEqual(obs['result'][0],
                          u'Traceback (most recent call last):\n')
@@ -73,11 +85,12 @@ class MOITests(TestCase):
             return a+b+c
 
         for ctx in ctxs:
-            id_, pid_ = submit(ctx, 'no parent', 'test', '/', foo, 1, 2, c=15)
+            id_, pid_, _ = submit(ctx, 'no parent', 'test', '/', foo, 1, 2,
+                                  c=15)
             self.test_keys.append(id_)
             self.test_keys.append(pid_)
 
-            sleep(2)
+            sleep(1)
 
             obs = json.loads(r_client.get(id_))
             self.assertEqual(obs['result'], 18)
@@ -88,10 +101,10 @@ class MOITests(TestCase):
     def test__submit(self):
         ctx = ctxs.values()[0]
         cmd = 'echo "hello"'
-        id_, pid_ = _submit(ctx, 'no parent', 'test', '/', system_call, cmd)
+        id_, pid_, _ = _submit(ctx, 'no parent', 'test', '/', system_call, cmd)
         self.test_keys.append(id_)
         self.test_keys.append(pid_)
-        sleep(2)
+        sleep(1)
 
         obs = json.loads(r_client.get(id_))
         self.assertEqual(obs['result'], [u"hello\n", u"", 0])
@@ -103,11 +116,11 @@ class MOITests(TestCase):
         def foo(a, b, c=10, **kwargs):
             return a+b+c
 
-        id_, pid_ = submit_nouser(foo, 1, 2, c=20)
+        id_, pid_, _ = submit_nouser(foo, 1, 2, c=20)
         self.test_keys.append(id_)
         self.test_keys.append(pid_)
 
-        sleep(2)
+        sleep(1)
 
         obs = json.loads(r_client.get(id_))
         self.assertEqual(obs['result'], 23)
