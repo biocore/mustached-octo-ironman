@@ -5,5 +5,5 @@ password =
 db = 0
 
 [ipython]
-context=qiita_general,qiita_reserved
-default=qiita_general
+context=general,reserved
+default=general
