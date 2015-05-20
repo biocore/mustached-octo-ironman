@@ -39,13 +39,13 @@ class GroupTests(TestCase):
 
     def test_traverse_simple(self):
         exp = {'a', 'b', 'c'}
-        obs = {obj['id'] for obj in self.obj._traverse('testing')}
+        obs = {obj['id'] for obj in self.obj.traverse('testing')}
         self.assertEqual(obs, exp)
 
     def test_traverse_removed_child(self):
         r_client.delete('b')
         exp = {'a', 'c'}
-        obs = {obj['id'] for obj in self.obj._traverse('testing')}
+        obs = {obj['id'] for obj in self.obj.traverse('testing')}
         self.assertEqual(obs, exp)
         self.assertEqual(r_client.smembers('testing:children'), exp)
 
@@ -59,7 +59,7 @@ class GroupTests(TestCase):
         self.to_delete.append('d_a')
         self.to_delete.append('d_b')
         exp = {'a', 'b', 'c', 'd', 'd_a', 'd_b'}
-        obs = {obj['id'] for obj in self.obj._traverse('testing')}
+        obs = {obj['id'] for obj in self.obj.traverse('testing')}
         self.assertEqual(obs, exp)
 
     def test_del(self):
