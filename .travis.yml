@@ -21,7 +21,7 @@ script:
   - ipcluster start --n=2 --profile=general --daemonize=True
   - sleep 10
   - nosetests --with-doctest --with-coverage
-  - moi
+  - ./scripts/moi 
   - flake8 moi setup.py
 services:
   - redis-server
