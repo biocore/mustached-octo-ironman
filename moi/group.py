@@ -89,7 +89,13 @@ class Group(object):
         while nodes:
             current_id = nodes.pop()
 
-            details = self._decode(r_client.get(current_id))
+            details = r_client.get(current_id)
+            if details is None:
+                # child has expired or been deleted, remove from :children
+                r_client.srem(_children_key(id_), current_id)
+                continue
+
+            details = self._decode(details)
             if details['type'] == 'group':
                 children = r_client.smembers(_children_key(details['id']))
                 if children is not None:
