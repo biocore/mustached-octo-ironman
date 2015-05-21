@@ -39,6 +39,7 @@ setup(name='moi',
       packages=['moi'],
       extras_require={'test': ["nose >= 0.10.1", "pep8", 'mock']},
       install_requires=['future==0.13.0', 'tornado==3.1.1', 'toredis', 'redis',
-                        'ipython[all]'],
+                        'ipython[all]', 'click >= 3.3',
+                        'python-dateutil==2.2'],
       classifiers=classifiers
       )

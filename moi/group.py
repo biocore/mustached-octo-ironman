@@ -9,6 +9,7 @@ r"""Redis group communication"""
 # -----------------------------------------------------------------------------
 
 from uuid import uuid4
+from datetime import datetime
 
 import toredis
 from redis import ResponseError
@@ -76,11 +77,14 @@ class Group(object):
             self.forwarder = forwarder
 
         self.listen_for_updates()
-        for node in self._traverse(self.group):
+        for node in self.traverse(self.group):
             self.listen_to_node(node['id'])
 
-    def _traverse(self, id_):
+    def traverse(self, id_=None):
         """Traverse groups and yield info dicts for jobs"""
+        if id_ is None:
+            id_ = self.group
+
         nodes = r_client.smembers(_children_key(id_))
         while nodes:
             current_id = nodes.pop()
@@ -338,7 +342,7 @@ class Group(object):
                 result.append(payload)
 
             if payload['type'] == 'group':
-                for obj in self._traverse(id_):
+                for obj in self.traverse(id_):
                     ids.add(obj['id'])
 
         return result
@@ -360,6 +364,7 @@ def create_info(name, info_type, url=None, parent=None, id=None,
             'status': 'Queued' if info_type == 'job' else None,
             'date_start': None,
             'date_end': None,
+            'date_created': str(datetime.now()),
             'result': None}
 
     if store:

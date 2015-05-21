@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+
+from uuid import UUID
+
+import click
+import dateutil.parser
+
+from moi import r_client
+from moi.group import Group
+
+
+def _is_uuid(test):
+    """Return True if test is a UUID, False otherwise"""
+    try:
+        UUID(test)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+@click.group()
+def moi():
+    pass
+
+
+@moi.command()
+@click.pass_context
+def users(ctx):
+    """Get the known users and their IDs"""
+    if not r_client.exists('user-id-map'):
+        click.echo("No user-id-map found, is the Redis database ID correct?")
+        ctx.exit(1)
+
+    user_map = r_client.hgetall('user-id-map')
+
+    for id_ in sorted(user_map):
+        if not _is_uuid(id_):
+            click.echo("%s : %s" % (id_, user_map[id_]))
+
+
+@moi.command()
+@click.pass_context
+@click.option('--key', help='A username', required=True)
+def userjobs(ctx, key):
+    """Get all jobs associated with a user or key"""
+    by_id = r_client.get(key)
+    by_user = r_client.hget('user-id-map', key)
+
+    if by_id is None and by_user is None:
+        click.echo("Unknown key: %s" % key)
+        ctx.exit(1)
+
+    tb = 'Traceback (most recent call last):\n'
+    p = dateutil.parser.parse
+    grp = Group(by_id) if by_id is not None else Group(by_user)
+
+    for node in sorted(grp.traverse(), key=lambda x: p(x['date_created'])):
+        # format the traceback so it is pleasant looking
+        res = node['result']
+        if isinstance(res, list) and res[0] == tb:
+            node['result'] = "".join(res).rstrip()
+
+        click.echo("********** %s **********" % node['id'])
+        for key, val in sorted(node.items()):
+            if key == 'result':
+                continue
+
+            if len(key) < 8:
+                key = "%s\t" % key
+
+            click.echo("%s\t: %s" % (key, val))
+
+        click.echo("result\t\t: %s" % (node['result']))
+        click.echo()
+
+
+if __name__ == '__main__':
+    moi()
