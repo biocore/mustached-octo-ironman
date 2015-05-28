@@ -10,6 +10,7 @@
 * `_redis_wrap` will now reraise if an exception is thrown
 * moi_list will no longer attempt to set status if the status node does not exist
 * `Context` now knows its name
+* A new click interface for getting job details
 
 ### Incompatible changes
 * `update_status` is now `moi_update_status`
