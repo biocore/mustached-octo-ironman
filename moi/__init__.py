@@ -15,6 +15,24 @@ with standard_library.hooks():
 from moi.context import Context  # noqa
 
 
+def _support_directory():
+    """Get the path of the support_files directory"""
+    from os.path import join, dirname, abspath
+    return join(dirname(abspath(__file__)), 'support_files')
+
+
+def moi_js():
+    """Return the absolute path to moi.js"""
+    from os.path import join
+    return join(_support_directory(), 'moi.js')
+
+
+def moi_list_js():
+    """Return the absolute path to moi_list.js"""
+    from os.path import join
+    return join(_support_directory(), 'moi_list.js')
+
+
 REDIS_KEY_TIMEOUT = 84600 * 14  # two weeks
 
 
@@ -37,4 +55,5 @@ ctxs = {name: Context(name)
 ctx_default = _config.get('ipython', 'default')
 
 __version__ = '0.1.0-dev'
-__all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT']
+__all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT', 'moi_js',
+           'moi_list_js']
