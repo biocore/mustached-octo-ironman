@@ -6,9 +6,11 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 import os
+from sys import stderr
 
 from redis import Redis
 from future import standard_library
+from IPython.parallel.error import TimeoutError
 with standard_library.hooks():
     from configparser import ConfigParser
 
@@ -32,9 +34,19 @@ r_client = Redis(host=_config.get('redis', 'host'),
 
 
 # setup contexts
-ctxs = {name: Context(name)
-        for name in _config.get('ipython', 'context').split(',')}
+ctxs = {}
+failed = []
+for name in _config.get('ipython', 'context').split(','):
+    try:
+        ctxs[name] = Context(name)
+    except (TimeoutError, IOError, ValueError):
+        failed.append(name)
+
+if failed:
+    stderr.write('Unable to connect to ipcluster(s): %s\n' % ', '.join(failed))
+
 ctx_default = _config.get('ipython', 'default')
+
 
 __version__ = '0.1.0-dev'
 __all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT']
