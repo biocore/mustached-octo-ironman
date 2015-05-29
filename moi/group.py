@@ -9,6 +9,7 @@ r"""Redis group communication"""
 # -----------------------------------------------------------------------------
 
 from uuid import uuid4
+from datetime import datetime
 
 import toredis
 from redis import ResponseError
@@ -16,8 +17,37 @@ from tornado.escape import json_decode, json_encode
 
 from moi import r_client, ctx_default
 
-_children_key = lambda x: x + ':children'
-_pubsub_key = lambda x: x + ':pubsub'
+
+def _children_key(key):
+    """Create a key that corresponds to the group's children
+
+    Parameters
+    ----------
+    key : str
+        The group key
+
+    Returns
+    -------
+    str
+        The augmented key
+    """
+    return key + ':children'
+
+
+def _pubsub_key(key):
+    """Create a pubsub key that corresponds to the group's pubsub
+
+    Parameters
+    ----------
+    key : str
+        The group key
+
+    Returns
+    -------
+    str
+        The augmented key
+    """
+    return key + ':pubsub'
 
 
 class Group(object):
@@ -47,17 +77,25 @@ class Group(object):
             self.forwarder = forwarder
 
         self.listen_for_updates()
-        for node in self._traverse(self.group):
+        for node in self.traverse(self.group):
             self.listen_to_node(node['id'])
 
-    def _traverse(self, id_):
+    def traverse(self, id_=None):
         """Traverse groups and yield info dicts for jobs"""
+        if id_ is None:
+            id_ = self.group
 
         nodes = r_client.smembers(_children_key(id_))
         while nodes:
             current_id = nodes.pop()
 
-            details = self._decode(r_client.get(current_id))
+            details = r_client.get(current_id)
+            if details is None:
+                # child has expired or been deleted, remove from :children
+                r_client.srem(_children_key(id_), current_id)
+                continue
+
+            details = self._decode(details)
             if details['type'] == 'group':
                 children = r_client.smembers(_children_key(details['id']))
                 if children is not None:
@@ -304,7 +342,7 @@ class Group(object):
                 result.append(payload)
 
             if payload['type'] == 'group':
-                for obj in self._traverse(id_):
+                for obj in self.traverse(id_):
                     ids.add(obj['id'])
 
         return result
@@ -326,6 +364,7 @@ def create_info(name, info_type, url=None, parent=None, id=None,
             'status': 'Queued' if info_type == 'job' else None,
             'date_start': None,
             'date_end': None,
+            'date_created': str(datetime.now()),
             'result': None}
 
     if store:
