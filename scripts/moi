@@ -22,11 +22,6 @@ def _is_uuid(test):
 
 
 def _python_exec(cmd, *args, **kwargs):
-    """exec is a statement, and cannot be passed as a function"""
-    exec(cmd)
-
-
-def _python_return_exec(cmd, *args, **kwargs):
     """Wrap for exec such that a return statement can be honored"""
     exec('def execwrapper(): %s' % cmd)
     return execwrapper()  # noqa
@@ -77,15 +72,14 @@ def moi():
 @click.option('--block/--no-block', help="Wait for a result and print it",
               default=False)
 @click.option('--cmd-type', help="Submission type", default='python',
-              type=click.Choice(['python', 'python-return', 'system']))
+              type=click.Choice(['python', 'system']))
 def submit(ctx, user, cmd, name, context, block, cmd_type):
     """Submit something to execute"""
     if context is not None and context not in ctxs:
         click.echo("Unknown context: %s" % context, err=True)
         ctx.exit(1)
 
-    method = {'python': _python_exec, 'python-return': _python_return_exec,
-              'system': _system_exec}[cmd_type]
+    method = {'python': _python_exec, 'system': _system_exec}[cmd_type]
 
     id_ = get_id_from_user(user)
     job_id, parent_id, ar = moi_submit(context, id_, name, None, method, cmd)
