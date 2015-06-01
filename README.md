@@ -186,7 +186,7 @@ url     : None
 result      : 42
 
 ********** 44650179-deda-4f5c-9c92-5802f7b13154 **********
-context     : qiita_general
+context     : default
 date_created    : 2015-06-01 16:13:21.959556
 date_end    : 2015-06-01 16:13:21.963721
 date_start  : 2015-06-01 16:13:21.963070
