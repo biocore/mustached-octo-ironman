@@ -140,6 +140,81 @@ stdout:
 stderr: /bin/sh: foobar: command not found
 ```
 
+Retrieving user job information
+-------------------------------
+
+moi can retrieve all the information it knows about a user's jobs and dump it.
+In this example, we're going to submit two jobs, one that works and one that 
+fails, and then take a look at the resulting output.
+
+First, next start with a user that doesn't exist. Notice the argument is 
+`--key` as you can specify the user's UUID or the username.
+
+```bash
+$ moi userjobs --key=example
+Unknown key: example
+```
+
+So we're starting on a clean slate. Now, let's submit some work. The first job
+hopefully will succeed and the second probably will crash and burn a horrible
+fiery death.
+
+```bash
+$ moi submit --user=example --cmd "return 42"
+Submitted job id: 558de7a9-fb99-4a67-8b27-62b2ddfb80ff
+$ moi submit --user=example --cmd "return float('crash and burn')"
+Submitted job id: 44650179-deda-4f5c-9c92-5802f7b13154
+```
+
+Now we can examine what happened! The job information is provided below, and
+will be sorted by date.
+
+```bash
+$ ./moi userjobs --key=example
+********** 558de7a9-fb99-4a67-8b27-62b2ddfb80ff **********
+context     : default
+date_created    : 2015-06-01 16:13:16.499326
+date_end    : 2015-06-01 16:13:16.503163
+date_start  : 2015-06-01 16:13:16.502835
+id      : 558de7a9-fb99-4a67-8b27-62b2ddfb80ff
+name        : no-user-cmd-submit
+parent      : effc00bd-d9be-4bfa-b788-a273e1c7d5da
+pubsub      : 558de7a9-fb99-4a67-8b27-62b2ddfb80ff:pubsub
+status      : Success
+type        : job
+url     : None
+result      : 42
+
+********** 44650179-deda-4f5c-9c92-5802f7b13154 **********
+context     : qiita_general
+date_created    : 2015-06-01 16:13:21.959556
+date_end    : 2015-06-01 16:13:21.963721
+date_start  : 2015-06-01 16:13:21.963070
+id      : 44650179-deda-4f5c-9c92-5802f7b13154
+name        : no-user-cmd-submit
+parent      : effc00bd-d9be-4bfa-b788-a273e1c7d5da
+pubsub      : 44650179-deda-4f5c-9c92-5802f7b13154:pubsub
+status      : Failed
+type        : job
+url     : None
+result      : Traceback (most recent call last):
+  File "/Users/mcdonadt/ResearchWork/software/mustached-octo-ironman/moi/job.py", line 140, in _redis_wrap
+    result = func(*args, **kwargs)
+  File "./moi", line 27, in _python_exec
+  File "<string>", line 1, in execwrapper
+ValueError: could not convert string to float: crash and burn
+```
+
+But that can be quite a bit of information if the user has a large number of
+jobs associated. So we can also just dump a lighter summary that is still 
+sorted by time of run.
+
+```bash
+$ moi userjobs --key=example --summary
+date: 2015-06-01 16:13:16.499326    id: 558de7a9-fb99-4a67-8b27-62b2ddfb80ff    status: Success
+date: 2015-06-01 16:13:21.959556    id: 44650179-deda-4f5c-9c92-5802f7b13154    status: Failed
+```
+
 Types of compute
 ----------------
 
