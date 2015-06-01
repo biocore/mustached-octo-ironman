@@ -33,7 +33,7 @@ def _system_exec(cmd, *args, **kwargs):
     return system_call(cmd, **kwargs)
 
 
-def _dump_job_detail(node):
+def _dump_job_detail(node, summary=False):
     """Pretty print job detail"""
     # format the traceback so it is pleasant looking
     tb = 'Traceback (most recent call last):\n'
@@ -41,18 +41,24 @@ def _dump_job_detail(node):
     if isinstance(res, list) and res[0] == tb:
         node['result'] = "".join(res).rstrip()
 
-    click.echo("********** %s **********" % node['id'])
-    for key, val in sorted(node.items()):
-        if key == 'result':
-            continue
+    if summary:
+        click.echo("date: %s\tid: %s\tstatus: %s" % (node['date_created'],
+                                                     node['id'],
+                                                     node['status']))
+    else:
+        click.echo("********** %s **********" % node['id'])
 
-        if len(key) < 8:
-            key = "%s\t" % key
+        for key, val in sorted(node.items()):
+            if key == 'result':
+                continue
 
-        click.echo("%s\t: %s" % (key, val))
+            if len(key) < 8:
+                key = "%s\t" % key
 
-    click.echo("result\t\t: %s" % (node['result']))
-    click.echo()
+            click.echo("%s\t: %s" % (key, val))
+
+        click.echo("result\t\t: %s" % (node['result']))
+        click.echo()
 
 
 @click.group()
@@ -90,7 +96,7 @@ def submit(ctx, user, cmd, name, context, block, cmd_type):
         ar.wait()
         payload = json.loads(r_client.get(job_id))
         _dump_job_detail(payload)
-        
+
 
 @moi.command()
 @click.pass_context
@@ -110,7 +116,9 @@ def users(ctx):
 @moi.command()
 @click.pass_context
 @click.option('--key', help='A username or user key', required=True)
-def userjobs(ctx, key):
+@click.option('--summary', help="Just job summary information", default=False,
+              is_flag=True)
+def userjobs(ctx, key, summary):
     """Get all jobs associated with a user or key"""
     by_id = r_client.exists(key)
     by_user = r_client.hget('user-id-map', key)
@@ -122,7 +130,7 @@ def userjobs(ctx, key):
     p = dateutil.parser.parse
     grp = Group(key) if by_id is not None else Group(by_user)
     for node in sorted(grp.traverse(), key=lambda x: p(x['date_created'])):
-        _dump_job_detail(node)
+        _dump_job_detail(node, summary)
 
 
 @moi.command()
