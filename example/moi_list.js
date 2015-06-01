@@ -1,1 +1,1 @@
-../moi_list.js
+../moi/support_files/moi_list.js
