@@ -112,16 +112,15 @@ def users(ctx):
 @click.option('--key', help='A username or user key', required=True)
 def userjobs(ctx, key):
     """Get all jobs associated with a user or key"""
-    by_id = r_client.get(key)
+    by_id = r_client.exists(key)
     by_user = r_client.hget('user-id-map', key)
 
-    if by_id is None and by_user is None:
+    if by_id is False and by_user is None:
         click.echo("Unknown key: %s" % key, err=True)
         ctx.exit(1)
 
     p = dateutil.parser.parse
-    grp = Group(by_id) if by_id is not None else Group(by_user)
-
+    grp = Group(key) if by_id is not None else Group(by_user)
     for node in sorted(grp.traverse(), key=lambda x: p(x['date_created'])):
         _dump_job_detail(node)
 
