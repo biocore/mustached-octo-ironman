@@ -23,6 +23,7 @@ script:
   - nosetests --with-doctest --with-coverage
   - ./scripts/moi 
   - flake8 moi setup.py
+  - script_test.sh
 services:
   - redis-server
 after_success:
