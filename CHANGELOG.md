@@ -13,6 +13,7 @@
 * added moi.moi_js and moi.moi_list_js to retreive the absolute path to the 
     corresponding .js files
 * A new click interface for getting job details
+* Added `submit` and `job` methods to the command line interface
 
 ### Incompatible changes
 * `update_status` is now `moi_update_status`
