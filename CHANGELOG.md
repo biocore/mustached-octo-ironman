@@ -10,6 +10,8 @@
 * `_redis_wrap` will now reraise if an exception is thrown
 * moi_list will no longer attempt to set status if the status node does not exist
 * `Context` now knows its name
+* added moi.moi_js and moi.moi_list_js to retreive the absolute path to the 
+    corresponding .js files
 * A new click interface for getting job details
 
 ### Incompatible changes
