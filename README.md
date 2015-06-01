@@ -41,6 +41,105 @@ class Handler(RequestHandler):
                hello)
 ```
 
+Command line interface
+======================
+
+moi supports submission of arbitrary system calls and somewhat arbitrary Python code from the command line. Below is an example of sending some Python code. There are a few things to note, first that the `return` allows you to store data in the `result` field of a moi job. Second, we're using `--block` which will halt until the command completes, and then dump the associated job details. 
+
+```bash
+$ moi submit --cmd "x = 5; return x + 10" --block
+Submitted job id: 0c1ce595-4f6d-4fcb-b872-90118f6b1cd9
+********** 0c1ce595-4f6d-4fcb-b872-90118f6b1cd9 **********
+context		: default
+date_created	: 2015-06-01 15:46:49.977480
+date_end	: 2015-06-01 15:46:49.981942
+date_start	: 2015-06-01 15:46:49.981620
+id		: 0c1ce595-4f6d-4fcb-b872-90118f6b1cd9
+name		: no-user-cmd-submit
+parent		: ac97957a-a658-47c8-bfaf-08d965b3e745
+pubsub		: 0c1ce595-4f6d-4fcb-b872-90118f6b1cd9:pubsub
+status		: Success
+type		: job
+url		: None
+result		: 15
+```
+
+These jobs are submitted within the relevant context which can be provided on the command line. Next is an example of a system call via moi:
+
+```bash
+$ moi submit --cmd "echo 'hello from moi'" --block --cmd-type=system
+Submitted job id: 3cb7c548-895a-48ac-b1dc-786e89476c97
+********** 3cb7c548-895a-48ac-b1dc-786e89476c97 **********
+context		: default
+date_created	: 2015-06-01 15:39:17.829820
+date_end	: 2015-06-01 15:39:17.840456
+date_start	: 2015-06-01 15:39:17.834566
+id		: 3cb7c548-895a-48ac-b1dc-786e89476c97
+name		: no-user-cmd-submit
+parent		: ac97957a-a658-47c8-bfaf-08d965b3e745
+pubsub		: 3cb7c548-895a-48ac-b1dc-786e89476c97:pubsub
+status		: Success
+type		: job
+url		: None
+result		: [u'hello from moi\n', u'', 0]
+```
+
+Blocking and error command line example
+=======================================
+
+Now, lets say we have some long running work that we want to kick off, and come back to later. The next example shows a system call that blocks for some extended period, and in the interest of showing what happens when a command fails, we're going to force the command to do something wrong. Note, we are not using `--block`.
+
+```bash
+$ moi submit --cmd "sleep 10; foobar" --cmd-type=system
+Submitted job id: 088c98fb-8612-43af-80df-1f64555531be
+```
+
+Control immediately returns, but let's check the job status while it's "running".
+
+```bash
+$ moi job --job-id=088c98fb-8612-43af-80df-1f64555531be
+********** 088c98fb-8612-43af-80df-1f64555531be **********
+context		: default
+date_created	: 2015-06-01 15:51:21.979308
+date_end	: None
+date_start	: 2015-06-01 15:51:21.983198
+id		: 088c98fb-8612-43af-80df-1f64555531be
+name		: no-user-cmd-submit
+parent		: ac97957a-a658-47c8-bfaf-08d965b3e745
+pubsub		: 088c98fb-8612-43af-80df-1f64555531be:pubsub
+status		: Running
+type		: job
+url		: None
+result		: None
+```
+
+We can see that it has a status of "Running" right now. If we give it a few more seconds, we can see the job finishes. But, since the command `foobar` doesn't exist, we get our error output.
+
+```bash
+$ moi job --job-id=088c98fb-8612-43af-80df-1f64555531be
+********** 088c98fb-8612-43af-80df-1f64555531be **********
+context		: default
+date_created	: 2015-06-01 15:51:21.979308
+date_end	: 2015-06-01 15:51:32.004002
+date_start	: 2015-06-01 15:51:21.983198
+id		: 088c98fb-8612-43af-80df-1f64555531be
+name		: no-user-cmd-submit
+parent		: ac97957a-a658-47c8-bfaf-08d965b3e745
+pubsub		: 088c98fb-8612-43af-80df-1f64555531be:pubsub
+status		: Failed
+type		: job
+url		: None
+result		: Traceback (most recent call last):
+  File "/Users/mcdonadt/ResearchWork/software/mustached-octo-ironman/moi/job.py", line 140, in _redis_wrap
+    result = func(*args, **kwargs)
+  File "./moi", line 33, in _system_exec
+  File "/Users/mcdonadt/ResearchWork/software/mustached-octo-ironman/moi/job.py", line 52, in system_call
+    (cmd, stdout, stderr))
+ValueError: Failed to execute: sleep 10; foobar
+stdout:
+stderr: /bin/sh: foobar: command not found
+```
+
 Types of compute
 ----------------
 
