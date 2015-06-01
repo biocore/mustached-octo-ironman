@@ -14,6 +14,7 @@
     corresponding .js files
 * A new click interface for getting job details
 * Added `submit` and `job` methods to the command line interface
+* Can get summary information for all user jobs
 
 ### Incompatible changes
 * `update_status` is now `moi_update_status`
