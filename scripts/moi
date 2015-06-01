@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 from uuid import UUID
+import json
 
 import click
 import dateutil.parser
 
-from moi import r_client
-from moi.group import Group
+from moi import r_client, ctxs, ctx_default
+from moi.group import Group, get_id_from_user
+from moi.job import submit as moi_submit
 
 
 def _is_uuid(test):
@@ -19,6 +21,45 @@ def _is_uuid(test):
         return True
 
 
+def _python_exec(cmd, *args, **kwargs):
+    """exec is a statement, and cannot be passed as a function"""
+    exec(cmd)
+
+
+def _python_return_exec(cmd, *args, **kwargs):
+    """Wrap for exec such that a return statement can be honored"""
+    exec('def execwrapper(): %s' % cmd)
+    return execwrapper()  # noqa
+
+
+def _system_exec(cmd, *args, **kwargs):
+    """Execute a system call"""
+    from moi.job import system_call
+    return system_call(cmd, **kwargs)
+
+
+def _dump_job_detail(node):
+    """Pretty print job detail"""
+    # format the traceback so it is pleasant looking
+    tb = 'Traceback (most recent call last):\n'
+    res = node['result']
+    if isinstance(res, list) and res[0] == tb:
+        node['result'] = "".join(res).rstrip()
+
+    click.echo("********** %s **********" % node['id'])
+    for key, val in sorted(node.items()):
+        if key == 'result':
+            continue
+
+        if len(key) < 8:
+            key = "%s\t" % key
+
+        click.echo("%s\t: %s" % (key, val))
+
+    click.echo("result\t\t: %s" % (node['result']))
+    click.echo()
+
+
 @click.group()
 def moi():
     pass
@@ -26,10 +67,43 @@ def moi():
 
 @moi.command()
 @click.pass_context
+@click.option('--user', help='The usr to submit under', required=False,
+              type=str, default='no-user')
+@click.option('--cmd', help='Python code to execute', required=True, type=str)
+@click.option('--name', help='Job name', required=False, type=str,
+              default='no-user-cmd-submit')
+@click.option('--context', help='Context to execute under', required=False,
+              type=str, default=ctx_default)
+@click.option('--block/--no-block', help="Wait for a result and print it",
+              default=False)
+@click.option('--cmd-type', help="Submission type", default='python',
+              type=click.Choice(['python', 'python-return', 'system']))
+def submit(ctx, user, cmd, name, context, block, cmd_type):
+    """Submit something to execute"""
+    if context is not None and context not in ctxs:
+        click.echo("Unknown context: %s" % context, err=True)
+        ctx.exit(1)
+
+    method = {'python': _python_exec, 'python-return': _python_return_exec,
+              'system': _system_exec}[cmd_type]
+
+    id_ = get_id_from_user(user)
+    job_id, parent_id, ar = moi_submit(context, id_, name, None, method, cmd)
+
+    click.echo('Submitted job id: %s' % job_id)
+
+    if block:
+        ar.wait()
+        payload = json.loads(r_client.get(job_id))
+        _dump_job_detail(payload)
+        
+
+@moi.command()
+@click.pass_context
 def users(ctx):
     """Get the known users and their IDs"""
     if not r_client.exists('user-id-map'):
-        click.echo("No user-id-map found, is the Redis database ID correct?")
+        click.echo("No user-id-map found", err=True)
         ctx.exit(1)
 
     user_map = r_client.hgetall('user-id-map')
@@ -41,38 +115,38 @@ def users(ctx):
 
 @moi.command()
 @click.pass_context
-@click.option('--key', help='A username', required=True)
+@click.option('--key', help='A username or user key', required=True)
 def userjobs(ctx, key):
     """Get all jobs associated with a user or key"""
     by_id = r_client.get(key)
     by_user = r_client.hget('user-id-map', key)
 
     if by_id is None and by_user is None:
-        click.echo("Unknown key: %s" % key)
+        click.echo("Unknown key: %s" % key, err=True)
         ctx.exit(1)
 
-    tb = 'Traceback (most recent call last):\n'
     p = dateutil.parser.parse
     grp = Group(by_id) if by_id is not None else Group(by_user)
 
     for node in sorted(grp.traverse(), key=lambda x: p(x['date_created'])):
-        # format the traceback so it is pleasant looking
-        res = node['result']
-        if isinstance(res, list) and res[0] == tb:
-            node['result'] = "".join(res).rstrip()
+        _dump_job_detail(node)
 
-        click.echo("********** %s **********" % node['id'])
-        for key, val in sorted(node.items()):
-            if key == 'result':
-                continue
 
-            if len(key) < 8:
-                key = "%s\t" % key
+@moi.command()
+@click.pass_context
+@click.option('--job-id', help='A job key', required=True)
+def job(ctx, job_id):
+    """Get job details"""
+    if not _is_uuid(job_id):
+        click.echo("Does not look like a job id", err=True)
+        ctx.exit(1)
 
-            click.echo("%s\t: %s" % (key, val))
+    payload = r_client.get(job_id)
+    if payload is None:
+        click.echo("Job ID not found", err=True)
+        ctx.exit(1)
 
-        click.echo("result\t\t: %s" % (node['result']))
-        click.echo()
+    _dump_job_detail(json.loads(payload))
 
 
 if __name__ == '__main__':
