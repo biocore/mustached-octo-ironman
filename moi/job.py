@@ -154,13 +154,38 @@ def _redis_wrap(job_info, func, *args, **kwargs):
         raise caught
 
 
-def submit(ctx_name, *args, **kwargs):
-    """Submit through a context"""
+def submit(ctx_name, parent_id, name, url, func, *args, **kwargs):
+    """Submit through a context
+
+    Parameters
+    ----------
+    ctx_name : str
+        The name of the context to submit through
+    parent_id : str
+        The ID of the group that the job is a part of.
+    name : str
+        The name of the job
+    url : str
+        The handler that can take the results (e.g., /beta_diversity/)
+    func : function
+        The function to execute. Any returns from this function will be
+        serialized and deposited into Redis using the uuid for a key. This
+        function should raise if the method fails.
+    args : tuple or None
+        Any args for ``f``
+    kwargs : dict or None
+        Any kwargs for ``f``
+
+    Returns
+    -------
+    tuple, (str, str, AsyncResult)
+        The job ID and the parent ID
+    """
     if isinstance(ctx_name, Context):
         ctx = ctx_name
     else:
         ctx = ctxs.get(ctx_name, ctxs[ctx_default])
-    return _submit(ctx, *args, **kwargs)
+    return _submit(ctx, parent_id, name, url, func, *args, **kwargs)
 
 
 def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
