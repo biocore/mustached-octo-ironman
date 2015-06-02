@@ -113,9 +113,13 @@ var moi_list = new function () {
         }
     };
 
-    this.init = function (group_id) {
+    this.init = function (group_id, div) {
+        if (typeof div === 'undefined') {
+            div = 'div'; 
+        }
+
         restrict_to_group_id = group_id;
-        info_list = document.createElement('div');
+        info_list = document.createElement(div);
         info_list.setAttribute("id", "moi-list");
         document.body.appendChild(info_list);
         
