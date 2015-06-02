@@ -172,9 +172,9 @@ def submit(ctx_name, parent_id, name, url, func, *args, **kwargs):
         serialized and deposited into Redis using the uuid for a key. This
         function should raise if the method fails.
     args : tuple or None
-        Any args for ``f``
+        Any args for ``func``
     kwargs : dict or None
-        Any kwargs for ``f``
+        Any kwargs for ``func``
 
     Returns
     -------
@@ -204,9 +204,9 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
         serialized and deposited into Redis using the uuid for a key. This
         function should raise if the method fails.
     args : tuple or None
-        Any args for ``f``
+        Any args for ``func``
     kwargs : dict or None
-        Any kwargs for ``f``
+        Any kwargs for ``func``
 
     Returns
     -------
