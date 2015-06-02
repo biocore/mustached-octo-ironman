@@ -2,7 +2,7 @@
 
 ## Version 0.1.0-dev
 
-Currently in development, released on May 2nd 1023
+Currently in development, code name Transoxiana 
 
 ### Features
 * `moi_parent_id` is now available to all executed methods
