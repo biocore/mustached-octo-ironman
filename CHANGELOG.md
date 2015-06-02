@@ -1,6 +1,8 @@
 # moi changelog
 
-## Version 0.1.0-dev, changes go here
+## Version 0.1.0-dev
+
+Currently in development, released on May 2nd 1023
 
 ### Features
 * `moi_parent_id` is now available to all executed methods
@@ -22,7 +24,9 @@
 ### Bug fixes
 * `moi_context` was the dict of contexts, instead of the context name
 
-## Version 0.1.0, initial release (Nov. 17, 2014)
+## Version 0.1.0
+
+Initial release (Nov. 17, 2014)
 
 ### Features
 * Easy support for submitting compute, and monitoring compute from a browser.
