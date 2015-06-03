@@ -1,1 +1,1 @@
-../moi.js
+../moi/support_files/moi.js
