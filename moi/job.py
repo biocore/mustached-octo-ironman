@@ -179,7 +179,7 @@ def submit(ctx_name, parent_id, name, url, func, *args, **kwargs):
     Returns
     -------
     tuple, (str, str, AsyncResult)
-        The job ID and the parent ID
+        The job ID, parent ID and the IPython's AsyncResult object of the job
     """
     if isinstance(ctx_name, Context):
         ctx = ctx_name
@@ -211,7 +211,7 @@ def _submit(ctx, parent_id, name, url, func, *args, **kwargs):
     Returns
     -------
     tuple, (str, str, AsyncResult)
-        The job ID and the parent ID
+        The job ID, parent ID and the IPython's AsyncResult object of the job
     """
     parent_info = r_client.get(parent_id)
     if parent_info is None:
@@ -251,7 +251,7 @@ def submit_nouser(func, *args, **kwargs):
     Returns
     -------
     tuple, (str, str)
-        The job ID and the parent ID
+        The job ID, parent ID and the IPython's AsyncResult object of the job
     """
     return submit(ctx_default, "no-user", "unnamed", None, func, *args,
                   **kwargs)
