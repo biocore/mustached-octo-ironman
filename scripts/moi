@@ -35,17 +35,17 @@ def _system_exec(cmd, *args, **kwargs):
 
 def _dump_job_detail(node, summary=False):
     """Pretty print job detail"""
-    # format the traceback so it is pleasant looking
-    tb = 'Traceback (most recent call last):\n'
-    res = node['result']
-    if isinstance(res, list) and res[0] == tb:
-        node['result'] = "".join(res).rstrip()
-
     if summary:
         click.echo("date: %s\tid: %s\tstatus: %s" % (node['date_created'],
                                                      node['id'],
                                                      node['status']))
     else:
+        # format the traceback so it is pleasant looking
+        tb = 'Traceback (most recent call last):\n'
+        res = node['result']
+        if isinstance(res, list) and res[0] == tb:
+            node['result'] = "".join(res).rstrip()
+
         click.echo("********** %s **********" % node['id'])
 
         for key, val in sorted(node.items()):
