@@ -68,7 +68,7 @@ def moi():
 
 @moi.command()
 @click.pass_context
-@click.option('--user', help='The usr to submit under', required=False,
+@click.option('--user', help='The user to submit under', required=False,
               type=str, default='no-user')
 @click.option('--cmd', help='Python code to execute', required=True, type=str)
 @click.option('--name', help='Job name', required=False, type=str,
