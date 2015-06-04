@@ -145,7 +145,6 @@ def main():
         fail('You have uncommitted changes in git')
 
     set_init_version(version)
-    set_setup_version(version)
     make_git_commit('Bump version number to %s', version)
     make_git_tag(version)
     build_and_upload()
