@@ -1,8 +1,8 @@
 # moi changelog
 
-## Version 0.1.0-dev
+## Version 0.2
 
-Currently in development, code name Transoxiana 
+Feature release, code name Transoxiana, released on June 4th 2015
 
 ### Features
 * `moi_parent_id` is now available to all executed methods
