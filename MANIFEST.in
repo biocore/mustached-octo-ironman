@@ -1,0 +1,10 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include moi_config.txt
+
+graft example
+graft moi/support_files
+
+global-exclude *.pyc
+global-exclude *.pyo
