@@ -7,9 +7,19 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
+import re
+import ast
 from setuptools import setup
 
-__version__ = "0.1.0-dev"
+
+# version parsing from __init__ pulled from Flask's setup.py
+# https://github.com/mitsuhiko/flask/blob/master/setup.py
+_version_re = re.compile(r'__version__\s+=\s+(.*)')
+
+with open('moi/__init__.py', 'rb') as f:
+    hit = _version_re.search(f.read().decode('utf-8')).group(1)
+    version = str(ast.literal_eval(hit))
+
 
 classes = """
     Development Status :: 4 - Beta
@@ -28,7 +38,7 @@ long_description = """MOI: compute like a mustached octo ironman"""
 classifiers = [s.strip() for s in classes.split('\n') if s]
 
 setup(name='moi',
-      version=__version__,
+      version=version,
       long_description=long_description,
       license="BSD",
       description='Compute ninja',
