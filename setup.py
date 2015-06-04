@@ -51,5 +51,8 @@ setup(name='moi',
       install_requires=['future==0.13.0', 'tornado==3.1.1', 'toredis', 'redis',
                         'ipython[all]', 'click >= 3.3',
                         'python-dateutil==2.2'],
-      classifiers=classifiers
+      classifiers=classifiers,
+      package_data={'moi': ['support_files/moi.js',
+                            'support_files/moi_list.js']},
+      scripts=['scripts/moi']
       )
