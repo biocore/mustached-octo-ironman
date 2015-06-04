@@ -19,7 +19,7 @@ script:
   - export MOI_CONFIG_FP=`pwd`/moi_config.txt
   - ipython profile create general --parallel
   - ipcluster start --n=2 --profile=general --daemonize=True
-  - sleep 10
+  - sleep 30
   - nosetests --with-doctest --with-coverage
   - ./scripts/moi 
   - flake8 moi setup.py
