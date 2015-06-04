@@ -1,5 +1,9 @@
 # moi changelog
 
+## Version 0.2.0-dev
+
+Nothing so far.
+
 ## Version 0.2.0
 
 Feature release, code name Transoxiana, released on June 4th 2015

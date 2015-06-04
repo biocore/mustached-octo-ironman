@@ -75,6 +75,6 @@ if failed:
 ctx_default = _config.get('ipython', 'default')
 
 
-__version__ = '0.2.0'
+__version__ = '0.2.0-dev'
 __all__ = ['r_client', 'ctxs', 'ctx_default', 'REDIS_KEY_TIMEOUT', 'moi_js',
            'moi_list_js']
