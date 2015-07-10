@@ -56,7 +56,7 @@ var moi_list = new function () {
 
         var para = document.createElement("p");
         para.setAttribute("id", info.id);
-        var para_node = document.createTextNode(info.name + ': ');
+        var para_node = document.createTextNode(' ' + info.name + ': ');
         
         var state = document.createElement("span");
         state.setAttribute("id", info.id + ":status");
@@ -69,13 +69,13 @@ var moi_list = new function () {
             state_node.innerHTML = 'Group details';
         }
 
-        para.appendChild(para_node);
-        state.appendChild(state_node);
-        para.appendChild(state);
         createButton(para, function (id_to_drop) {  
                                           moi.send("remove", [id_to_drop]); 
                                           removeInfo(id_to_drop);
-                                      }); 
+                                      });
+        para.appendChild(para_node);
+        state.appendChild(state_node);
+        para.appendChild(state);
         info_list.appendChild(para);
        
         if(info.type == 'job') { 
